@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider,
   signInWithRedirect,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,7 +14,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle } from 'lucide-react';
 import { useAuth } from '@/firebase';
-import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
 
 type AuthFormMode = 'login' | 'signup';
 
@@ -35,24 +36,18 @@ export function AuthForms({ mode }: { mode: AuthFormMode }) {
     event.preventDefault();
     setIsLoading(true);
 
-    try {
-      if (mode === 'signup') {
-        initiateEmailSignUp(auth, email, password);
-      } else {
-        initiateEmailSignIn(auth, email, password);
-      }
-      // Non-blocking, so we don't await. The onAuthStateChanged listener in the provider will handle redirection.
-      // We can optimistically navigate or wait for the listener. For now, let's just let the listener handle it.
-      // A loading state could be shown here.
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: error.message,
-      });
-      setIsLoading(false); // Only set loading to false on error
-    }
-    // Don't set isLoading to false here in the success case. Let the redirect happen.
+    const authPromise = mode === 'signup' 
+      ? createUserWithEmailAndPassword(auth, email, password)
+      : signInWithEmailAndPassword(auth, email, password);
+
+    authPromise.catch((error) => {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: error.message,
+        });
+        setIsLoading(false);
+    });
   };
 
   const handleGoogleSignIn = async () => {
