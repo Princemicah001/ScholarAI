@@ -8,7 +8,6 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { extract } from '@extractus/article-extractor';
 
-
 const ExtractContentFromUrlInputSchema = z.object({
   url: z.string().url().describe('The URL to extract content from.'),
 });
@@ -17,8 +16,8 @@ const ExtractContentFromUrlOutputSchema = z.object({
   content: z.string().describe('The main textual content extracted from the URL.'),
 });
 
-export type ExtractContentFromUrlInput = z.infer<typeof ExtractContentFromUrlInputSchema>;
-export type ExtractContentFromUrlOutput = z.infer<typeof ExtractContentFromUrlOutputSchema>;
+type ExtractContentFromUrlInput = z.infer<typeof ExtractContentFromUrlInputSchema>;
+type ExtractContentFromUrlOutput = z.infer<typeof ExtractContentFromUrlOutputSchema>;
 
 
 export async function extractContentFromUrl(input: ExtractContentFromUrlInput): Promise<ExtractContentFromUrlOutput> {

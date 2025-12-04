@@ -7,17 +7,16 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const ExtractContentFromFileInputSchema = z.object({
+const ExtractContentFromFileInputSchema = z.object({
     fileDataUri: z.string().describe("A file (image, PDF, etc.) as a data URI."),
 });
 
-export const ExtractContentFromFileOutputSchema = z.object({
+const ExtractContentFromFileOutputSchema = z.object({
     content: z.string().describe('The extracted text content from the file.'),
 });
 
-export type ExtractContentFromFileInput = z.infer<typeof ExtractContentFromFileInputSchema>;
-export type ExtractContentFromFileOutput = z.infer<typeof ExtractContentFromFileOutputSchema>;
-
+type ExtractContentFromFileInput = z.infer<typeof ExtractContentFromFileInputSchema>;
+type ExtractContentFromFileOutput = z.infer<typeof ExtractContentFromFileOutputSchema>;
 
 export async function extractContentFromFile(input: ExtractContentFromFileInput): Promise<ExtractContentFromFileOutput> {
     const ocrPrompt = ai.definePrompt({
