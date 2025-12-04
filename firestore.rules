@@ -1,0 +1,153 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model where all data
+ * is siloed within a user-specific data hierarchy. A user can only access their own
+ * documents and subcollections. There is no concept of public or shared data.
+ *
+ * Data Structure: All application data is nested under the top-level `/users`
+ * collection. The structure `/users/{userId}/{subcollection}/{documentId}` ensures
+ * that data access can be controlled simply by verifying the user's identity against
+ * the `{userId}` in the path.
+ *
+ * Key Security Decisions:
+ * - User Enumeration is Disallowed: Listing the top-level `/users` collection is
+ *   explicitly forbidden to protect user privacy.
+ * - Strict Ownership: All subcollections (studyMaterials, tests, testResults) are
+ *   only readable and writable by the parent user.
+ * - Authorization-First Denormalization: Child documents (e.g., StudyMaterial)
+ *   contain a denormalized `userId` field. Security rules enforce that this field
+ *   matches the parent user's ID on creation and remains immutable, ensuring
+ *   performant and secure authorization checks without needing extra database reads.
+ * - Default Deny: Access is implicitly denied unless an `allow` rule explicitly
+ *   grants it.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the primary function for enforcing data ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Ensures an update or delete operation targets an existing document and that
+     * the user is the owner. This prevents modifying or deleting non-existent data.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * Validates that a new user document has its internal 'id' field
+     * correctly set to the user's auth UID.
+     */
+    function hasValidUserDataOnCreate(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Enforces that the 'id' field of a user document cannot be changed after creation.
+     */
+    function isUserDataImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates that a new document in a user subcollection has its internal
+     * 'userId' field correctly set to the owner's auth UID.
+     */
+    function hasValidChildDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Enforces that the 'userId' field of a subcollection document cannot be
+     * changed after creation, preventing reassignment of ownership.
+     */
+    function isChildDataImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Manages user profile documents. A user can create, read, update,
+     *   and delete their own profile, but cannot see or list other users.
+     * @path /users/{userId}
+     * @allow A signed-in user (auth.uid='user123') can (get) their own profile at `/users/user123`.
+     * @deny A signed-in user (auth.uid='user456') cannot (get) another user's profile at `/users/user123`.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && hasValidUserDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && isUserDataImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages a user's private collection of study materials. Only the
+     *   owner of the data can perform any action on these documents.
+     * @path /users/{userId}/studyMaterials/{studyMaterialId}
+     * @allow A signed-in user (auth.uid='user123') can (create) a document in `/users/user123/studyMaterials`.
+     * @deny A signed-in user (auth.uid='user456') cannot (list) documents from `/users/user123/studyMaterials`.
+     * @principle Enforces document ownership for all operations within a user-specific subcollection.
+     */
+    match /users/{userId}/studyMaterials/{studyMaterialId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidChildDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && isChildDataImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages a user's private collection of tests. Only the
+     *   owner of the data can perform any action on these documents.
+     * @path /users/{userId}/tests/{testId}
+     * @allow A signed-in user (auth.uid='user123') can (get) a document from `/users/user123/tests/testABC`.
+     * @deny A signed-in user (auth.uid='user456') cannot (delete) a document at `/users/user123/tests/testABC`.
+     * @principle Enforces document ownership for all operations within a user-specific subcollection.
+     */
+    match /users/{userId}/tests/{testId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidChildDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && isChildDataImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Manages a user's private collection of test results. Only the
+     *   owner of the data can perform any action on these documents.
+     * @path /users/{userId}/testResults/{testResultId}
+     * @allow A signed-in user (auth.uid='user123') can (update) a document in `/users/user123/testResults`.
+     * @deny An anonymous user cannot (create) a document in `/users/user123/testResults`.
+     * @principle Enforces document ownership for all operations within a user-specific subcollection.
+     */
+    match /users/{userId}/testResults/{testResultId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidChildDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && isChildDataImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

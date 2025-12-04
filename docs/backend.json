@@ -1,0 +1,266 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user account in the ScholarAI application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Date and time the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "creationDate"
+      ]
+    },
+    "StudyMaterial": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "StudyMaterial",
+      "type": "object",
+      "description": "Represents a study material uploaded or created by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the study material entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N StudyMaterial)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the study material."
+        },
+        "sourceType": {
+          "type": "string",
+          "description": "Type of source for the study material (e.g., document, image, text, URL)."
+        },
+        "sourceUrl": {
+          "type": "string",
+          "description": "URL of the source material, if applicable.",
+          "format": "uri"
+        },
+        "uploadDate": {
+          "type": "string",
+          "description": "Date and time the study material was uploaded.",
+          "format": "date-time"
+        },
+        "extractedText": {
+          "type": "string",
+          "description": "The full extracted text content."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "sourceType",
+        "uploadDate",
+        "extractedText"
+      ]
+    },
+    "Test": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Test",
+      "type": "object",
+      "description": "Represents a test created from a StudyMaterial.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the test entity."
+        },
+        "studyMaterialId": {
+          "type": "string",
+          "description": "Reference to StudyMaterial. (Relationship: StudyMaterial 1:N Test)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Test)"
+        },
+        "testType": {
+          "type": "string",
+          "description": "Type of test (e.g., multiple choice, flashcards, oral questions, essay questions)."
+        },
+        "questionCount": {
+          "type": "number",
+          "description": "Number of questions in the test."
+        },
+        "passingScore": {
+          "type": "number",
+          "description": "The passing score required to pass the test."
+        },
+        "timer": {
+          "type": "number",
+          "description": "The alloted time for the test in seconds"
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "Date and time the test was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "studyMaterialId",
+        "userId",
+        "testType",
+        "questionCount",
+        "passingScore",
+        "timer",
+        "creationDate"
+      ]
+    },
+    "TestResult": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TestResult",
+      "type": "object",
+      "description": "Represents the result of a user taking a test.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the test result entity."
+        },
+        "testId": {
+          "type": "string",
+          "description": "Reference to Test. (Relationship: Test 1:N TestResult)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N TestResult)"
+        },
+        "score": {
+          "type": "number",
+          "description": "The score the user achieved on the test."
+        },
+        "completionDate": {
+          "type": "string",
+          "description": "Date and time the test was completed.",
+          "format": "date-time"
+        },
+        "performanceSummary": {
+          "type": "string",
+          "description": "A summary of the user's performance on the test."
+        },
+        "recommendations": {
+          "type": "string",
+          "description": "Tailored recommendations for improvement."
+        }
+      },
+      "required": [
+        "id",
+        "testId",
+        "userId",
+        "score",
+        "completionDate",
+        "performanceSummary",
+        "recommendations"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. 'userId' is the Firebase Auth UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/studyMaterials/{studyMaterialId}",
+        "definition": {
+          "entityName": "StudyMaterial",
+          "schema": {
+            "$ref": "#/backend/entities/StudyMaterial"
+          },
+          "description": "Stores study materials for each user. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "studyMaterialId",
+              "description": "Unique ID of the study material."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tests/{testId}",
+        "definition": {
+          "entityName": "Test",
+          "schema": {
+            "$ref": "#/backend/entities/Test"
+          },
+          "description": "Stores tests created by each user. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "testId",
+              "description": "Unique ID of the test."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/testResults/{testResultId}",
+        "definition": {
+          "entityName": "TestResult",
+          "schema": {
+            "$ref": "#/backend/entities/TestResult"
+          },
+          "description": "Stores test results for each user. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Auth UID of the user."
+            },
+            {
+              "name": "testResultId",
+              "description": "Unique ID of the test result."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to securely store user data, study materials, tests, and test results for the ScholarAI application, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). It leverages path-based ownership and denormalization to achieve these goals.\n\n1.  **Users Collection:** Stores user profiles.\n\n2.  **Users/{userId}/studyMaterials Collection:** Each user has their own subcollection of study materials, ensuring that only the user has access to their materials. The `userId` field in each `StudyMaterial` document is redundant but crucial. This design ensures authorization independence because security rules can validate `request.auth.uid == resource.data.userId` without needing to read the parent `User` document.\n\n3.  **Users/{userId}/tests Collection:** Similar to study materials, each user has a subcollection of tests they've created.  The `userId` field within each `Test` document, along with the path-based ownership, allows security rules to validate ownership without `get()` calls.\n\n4.  **Users/{userId}/testResults Collection:**  Each user has their own subcollection of test results. The `userId` field within each `TestResult` document, coupled with the path structure, allows security rules to easily ensure that only the user can access their results.\n\n**Authorization Independence:**\n\n*   The primary technique for achieving authorization independence is storing the `userId` within each `StudyMaterial`, `Test`, and `TestResult` document. This denormalization eliminates the need for security rules to perform `get()` operations on parent documents to determine authorization, allowing for atomic writes and improved security.\n\n**QAPs (Rules are not Filters):**\n\n*   The path-based ownership (`/users/{userId}/...`) ensures secure `list` operations. A user can only list documents within their own path, preventing them from filtering across other users' data using security rules.  There are no generic collections (e.g., `/studyMaterials`) where rules might be tempted to act as filters."
+  }
+}
