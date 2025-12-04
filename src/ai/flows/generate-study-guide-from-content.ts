@@ -33,45 +33,32 @@ export type GenerateStudyGuideInput = z.infer<typeof GenerateStudyGuideInputSche
 export type GenerateStudyGuideOutput = z.infer<typeof GenerateStudyGuideOutputSchema>;
 
 export async function generateStudyGuideFromContent(input: GenerateStudyGuideInput): Promise<GenerateStudyGuideOutput> {
-  return generateStudyGuideFlow(input);
-}
+  const studyGuidePrompt = ai.definePrompt({
+    name: 'studyGuidePrompt',
+    input: { schema: GenerateStudyGuideInputSchema },
+    output: { schema: GenerateStudyGuideOutputSchema },
+    prompt: `You are an expert educator and study coach. Your task is to create a comprehensive study guide from the provided text.
 
+  Analyze the following content and generate:
+  1.  **Executive Summary**: A brief overview of the entire text.
+  2.  **Key Points**: A bulleted list of the most critical information.
+  3.  **Definitions**: A list of important terms and their clear, concise definitions.
+  4.  **Explained Concepts**: A breakdown of the main ideas with detailed explanations.
+  5.  **Examples**: Simple examples to clarify complex topics.
+  6.  **Memorization Cues**: Mnemonics or other memory aids to help the learner remember key information.
 
-const studyGuidePrompt = ai.definePrompt({
-  name: 'studyGuidePrompt',
-  input: { schema: GenerateStudyGuideInputSchema },
-  output: { schema: GenerateStudyGuideOutputSchema },
-  prompt: `You are an expert educator and study coach. Your task is to create a comprehensive study guide from the provided text.
+  Ensure the output is structured, clear, and optimized for learning and retention.
 
-Analyze the following content and generate:
-1.  **Executive Summary**: A brief overview of the entire text.
-2.  **Key Points**: A bulleted list of the most critical information.
-3.  **Definitions**: A list of important terms and their clear, concise definitions.
-4.  **Explained Concepts**: A breakdown of the main ideas with detailed explanations.
-5.  **Examples**: Simple examples to clarify complex topics.
-6.  **Memorization Cues**: Mnemonics or other memory aids to help the learner remember key information.
+  Provided Content:
+  ---
+  {{{content}}}
+  ---
+  `,
+  });
 
-Ensure the output is structured, clear, and optimized for learning and retention.
-
-Provided Content:
----
-{{{content}}}
----
-`,
-});
-
-
-const generateStudyGuideFlow = ai.defineFlow(
-  {
-    name: 'generateStudyGuideFlow',
-    inputSchema: GenerateStudyGuideInputSchema,
-    outputSchema: GenerateStudyGuideOutputSchema,
-  },
-  async (input) => {
-    const { output } = await studyGuidePrompt(input);
-    if (!output) {
-      throw new Error('Failed to generate study guide.');
-    }
-    return output;
+  const { output } = await studyGuidePrompt(input);
+  if (!output) {
+    throw new Error('Failed to generate study guide.');
   }
-);
+  return output;
+}

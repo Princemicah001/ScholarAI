@@ -20,32 +20,21 @@ export type ExtractContentFromFileOutput = z.infer<typeof ExtractContentFromFile
 
 
 export async function extractContentFromFile(input: ExtractContentFromFileInput): Promise<ExtractContentFromFileOutput> {
-  return extractContentFromFileFlow(input);
-}
-
-const ocrPrompt = ai.definePrompt({
-    name: 'ocrPrompt',
-    input: { schema: ExtractContentFromFileInputSchema },
-    output: { schema: ExtractContentFromFileOutputSchema },
-    prompt: `You are an Optical Character Recognition (OCR) specialist. Your task is to extract all text from the provided file.
+    const ocrPrompt = ai.definePrompt({
+        name: 'ocrPrompt',
+        input: { schema: ExtractContentFromFileInputSchema },
+        output: { schema: ExtractContentFromFileOutputSchema },
+        prompt: `You are an Optical Character Recognition (OCR) specialist. Your task is to extract all text from the provided file.
     
-    File: {{media url=fileDataUri}}
+        File: {{media url=fileDataUri}}
 
-    Return only the full, extracted text content.
-    `,
-});
+        Return only the full, extracted text content.
+        `,
+    });
 
-const extractContentFromFileFlow = ai.defineFlow(
-    {
-        name: 'extractContentFromFileFlow',
-        inputSchema: ExtractContentFromFileInputSchema,
-        outputSchema: ExtractContentFromFileOutputSchema,
-    },
-    async (input) => {
-        const { output } = await ocrPrompt(input);
-        if (!output) {
-            throw new Error('Failed to extract content from file.');
-        }
-        return output;
+    const { output } = await ocrPrompt(input);
+    if (!output) {
+        throw new Error('Failed to extract content from file.');
     }
-);
+    return output;
+}
