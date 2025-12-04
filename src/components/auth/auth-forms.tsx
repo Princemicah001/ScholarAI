@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
 } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,8 +59,8 @@ export function AuthForms({ mode }: { mode: AuthFormMode }) {
     setIsLoading(true);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // Let the listener handle the redirect
+      await signInWithRedirect(auth, provider);
+      // Let the listener handle the redirect logic after returning from Google
     } catch (error: any) {
       toast({
         variant: 'destructive',
