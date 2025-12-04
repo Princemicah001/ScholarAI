@@ -19,6 +19,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 
 function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
     return (
@@ -100,7 +101,7 @@ function AssessmentConfigDialog({ onStart, isLoading }: { onStart: (config: Gene
     const [questionCount, setQuestionCount] = React.useState(5);
     const [questionTypes, setQuestionTypes] = React.useState<GenerateAIAssessmentInput['questionTypes']>(['multiple_choice']);
 
-    const handleTypeChange = (type: 'multiple_choice' | 'true_false' | 'short_answer', checked: boolean) => {
+    const handleTypeChange = (type: 'multiple_choice' | 'true_false' | 'short_answer' | 'essay', checked: boolean) => {
         setQuestionTypes(prev => {
             const newTypes = checked ? [...prev, type] : prev.filter(t => t !== type);
             // Ensure at least one type is selected
@@ -166,6 +167,14 @@ function AssessmentConfigDialog({ onStart, isLoading }: { onStart: (config: Gene
                                 />
                                 <Label htmlFor="sa">Short Answer</Label>
                             </div>
+                             <div className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id="essay"
+                                    checked={questionTypes.includes('essay')}
+                                    onCheckedChange={(checked) => handleTypeChange('essay', !!checked)}
+                                />
+                                <Label htmlFor="essay">Essay</Label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -215,7 +224,9 @@ function AssessmentDisplay({ assessment }: { assessment: AIAssessment }) {
                     </RadioGroup>
                 )
             case 'short_answer':
-                return <textarea className="w-full p-2 border rounded-md" placeholder="Your answer..."/>
+                return <Textarea placeholder="Your answer..."/>
+            case 'essay':
+                return <Textarea className="min-h-[200px]" placeholder="Your essay response..."/>
             default:
                 return <p>Unsupported question type.</p>
         }
@@ -272,7 +283,6 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
 
     React.useEffect(() => {
         if (material?.uploadDate) {
-            // Format date on the client to avoid hydration mismatch
             setFormattedDate(new Date(material.uploadDate).toLocaleDateString());
         }
     }, [material?.uploadDate]);
@@ -309,6 +319,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 };
                 const generatedAssessment = await generateAssessment(assessmentInput);
                 setAssessment(generatedAssessment);
+                setStudyGuide(null); // Hide study guide when assessment starts
                 toast({
                     title: "Assessment Generated",
                     description: "Your AI-powered assessment is ready.",
@@ -367,6 +378,19 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         )
     }
 
+    if (assessment) {
+        return (
+            <DashboardLayout>
+                <PageHeader
+                    title={`${material.title} - Assessment`}
+                />
+                <div className="mt-8 max-w-4xl mx-auto">
+                    <AssessmentDisplay assessment={assessment} />
+                </div>
+            </DashboardLayout>
+        )
+    }
+
     return (
         <DashboardLayout>
             <PageHeader
@@ -421,7 +445,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                         </Card>
                     )}
                     
-                    {studyGuide && !assessment && (
+                    {studyGuide && (
                          <Card>
                             <CardHeader>
                                 <CardTitle>AI Generated Study Guide</CardTitle>
@@ -443,10 +467,6 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                                 <Skeleton className="h-4 w-5/6" />
                             </CardContent>
                         </Card>
-                    )}
-
-                    {assessment && (
-                        <AssessmentDisplay assessment={assessment} />
                     )}
                 </div>
             </div>
