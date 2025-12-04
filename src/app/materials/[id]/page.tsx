@@ -186,7 +186,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                         <CardHeader>
                             <CardTitle>AI Tools</CardTitle>
                              <CardDescription>Generate study aids from your material.</CardDescription>
-                        </Header>
+                        </CardHeader>
                          <CardContent className="space-y-4">
                             <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-10 w-full" />
@@ -283,4 +283,3 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
             </div>
         </DashboardLayout>
     );
-}
