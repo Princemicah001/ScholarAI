@@ -2,7 +2,7 @@ import { SiteHeader } from '@/components/site-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { BookOpen, FileInput, Link, TestTube, TrendingUp, Sparkles } from 'lucide-react';
+import { BookOpen, FileInput, TestTube, TrendingUp } from 'lucide-react';
 import Image from 'next/image';
 import NextLink from 'next/link';
 
@@ -39,22 +39,23 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col relative">
+       {heroImage && (
+        <Image
+          src={heroImage.imageUrl}
+          alt={heroImage.description}
+          fill
+          className="object-cover -z-20"
+          data-ai-hint={heroImage.imageHint}
+        />
+      )}
+      <div className="absolute inset-0 bg-background/80 -z-10" />
+
       <SiteHeader />
       <main className="flex-1">
         <section
           className="relative w-full py-12 md:py-24 lg:py-32"
         >
-          {heroImage && (
-            <Image
-              src={heroImage.imageUrl}
-              alt={heroImage.description}
-              fill
-              className="object-cover -z-10"
-              data-ai-hint={heroImage.imageHint}
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background to-background/50 -z-10" />
           <div className="container px-4 md:px-6">
             <div className="flex flex-col justify-center items-center text-center space-y-4">
               <div className="space-y-2">
@@ -77,7 +78,7 @@ export default function Home() {
           </div>
         </section>
         
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-card">
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
@@ -90,7 +91,7 @@ export default function Home() {
             </div>
             <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:max-w-none lg:grid-cols-4 mt-12">
               {features.map((feature, index) => (
-                <Card key={index} className="h-full">
+                <Card key={index} className="h-full bg-card/80 backdrop-blur-sm">
                   <CardHeader className="flex flex-col items-center text-center">
                     <div className="mb-4 rounded-full bg-secondary p-4">
                       {feature.icon}
@@ -124,7 +125,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="flex items-center justify-center w-full h-24 border-t">
+      <footer className="flex items-center justify-center w-full h-24">
         <p className="text-muted-foreground">&copy; 2024 ScholarAI. All rights reserved.</p>
       </footer>
     </div>
