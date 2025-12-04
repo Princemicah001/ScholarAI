@@ -116,7 +116,7 @@ function AssessmentConfigDialog({ onStart, isLoading }: { onStart: (config: Gene
     const [timer, setTimer] = React.useState(10); // Default 10 minutes
     const [questionTypes, setQuestionTypes] = React.useState<GenerateAIAssessmentInput['questionTypes']>(['multiple_choice']);
 
-    const handleTypeChange = (type: 'multiple_choice' | 'true_false' | 'short_answer' | 'essay', checked: boolean) => {
+    const handleTypeChange = (type: 'multiple_choice' | 'flashcard' | 'short_answer' | 'essay', checked: boolean) => {
         setQuestionTypes(prev => {
             const newTypes = checked ? [...prev, type] : prev.filter(t => t !== type);
             // Ensure at least one type is selected
@@ -178,11 +178,11 @@ function AssessmentConfigDialog({ onStart, isLoading }: { onStart: (config: Gene
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Checkbox 
-                                    id="tf"
-                                    checked={questionTypes.includes('true_false')}
-                                    onCheckedChange={(checked) => handleTypeChange('true_false', !!checked)}
+                                    id="flashcard"
+                                    checked={questionTypes.includes('flashcard')}
+                                    onCheckedChange={(checked) => handleTypeChange('flashcard', !!checked)}
                                 />
-                                <Label htmlFor="tf">True/False</Label>
+                                <Label htmlFor="flashcard">Flashcards</Label>
                             </div>
                              <div className="flex items-center space-x-2">
                                 <Checkbox 
@@ -248,19 +248,8 @@ function AssessmentDisplay({ assessment, onComplete }: { assessment: AIAssessmen
                         ))}
                     </RadioGroup>
                 )
-            case 'true_false':
-                return (
-                     <RadioGroup onValueChange={handleAnswerChange} value={userAnswer}>
-                        <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="True" id={`q${currentQuestionIndex}-true`} />
-                            <Label htmlFor={`q${currentQuestionIndex}-true`}>True</Label>
-                        </div>
-                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="False" id={`q${currentQuestionIndex}-false`} />
-                            <Label htmlFor={`q${currentQuestionIndex}-false`}>False</Label>
-                        </div>
-                    </RadioGroup>
-                )
+            case 'flashcard':
+                return <Textarea placeholder="Your answer (definition/explanation)..." value={userAnswer} onChange={e => handleAnswerChange(e.target.value)} />
             case 'short_answer':
                 return <Textarea placeholder="Your answer..." value={userAnswer} onChange={e => handleAnswerChange(e.target.value)} />
             case 'essay':
