@@ -37,7 +37,7 @@ const textSchema = z.object({
 
 const fileSchema = z.object({
   sourceType: z.literal('file'),
-  file: z.any().refine(file => file instanceof File && file.size > 0, 'Please upload a file.'),
+  file: z.any().refine((val) => val, 'Please upload a file.'),
   userId: z.string(),
 });
 
@@ -103,7 +103,7 @@ export function CreateMaterialForm() {
     } else if (values.sourceType === 'text') {
       formData.append('title', values.title);
       formData.append('text', values.text);
-    } else if (values.sourceType === 'file') {
+    } else if (values.sourceType === 'file' && values.file) {
       formData.append('file', values.file);
     }
     
@@ -111,7 +111,7 @@ export function CreateMaterialForm() {
       await createMaterial(formData);
       toast({
         title: "Material Created",
-        description: "Your new study material is ready.",
+        description: "Your new study material is being processed.",
       });
       // The server action will handle redirection
     } catch (error: any) {
