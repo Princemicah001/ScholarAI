@@ -5,7 +5,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { GenerateStudyGuideOutputSchema } from '@/lib/actions';
+import { GenerateStudyGuideOutputSchema } from '@/lib/schemas';
 
 const GenerateStudyGuideInputSchema = z.object({
   content: z.string().describe('The source text to generate the study guide from.'),
