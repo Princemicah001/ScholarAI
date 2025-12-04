@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero",
+      "description": "Abstract image of data and learning",
+      "imageUrl": "https://images.unsplash.com/photo-1510906594845-bc082582c8cc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMHRlY2hub2xvZ3l8ZW58MHx8fHwxNzY0ODQ2OTUzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract technology"
+    },
+    {
+      "id": "feature-extraction",
+      "description": "Icon-like representation of extracting content",
+      "imageUrl": "https://images.unsplash.com/photo-1697382608813-df6eb720164f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxkb2N1bWVudCUyMHBhcGVyfGVufDB8fHx8MTc2NDg0NDc3OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "document paper"
+    },
+    {
+      "id": "feature-guide",
+      "description": "Icon-like representation of a study guide",
+      "imageUrl": "https://images.unsplash.com/photo-1476275466078-4007374efbbe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxib29rJTIwb3BlbnxlbnwwfHx8fDE3NjQ4ODIzMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "book open"
+    },
+    {
+      "id": "feature-assessment",
+      "description": "Icon-like representation of a test or assessment",
+      "imageUrl": "https://images.unsplash.com/photo-1657004632819-708722496e61?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjaGVja2xpc3QlMjB0ZXN0fGVufDB8fHx8MTc2NDg1MjYxMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "checklist test"
+    },
+    {
+      "id": "dashboard-empty",
+      "description": "An illustration for an empty dashboard state",
+      "imageUrl": "https://images.unsplash.com/photo-1618866569162-6be428961651?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkZXNrJTIwYm9va3N8ZW58MHx8fHwxNzY0ODgyMzA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "desk books"
+    }
+  ]
 }
