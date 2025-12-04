@@ -54,6 +54,7 @@ export type Question = z.infer<typeof QuestionSchema>;
 // Define the schema for the entire assessment
 export const AIAssessmentSchema = z.object({
   questions: z.array(QuestionSchema).describe('A list of generated assessment questions.'),
+  timer: z.number().optional().describe('The allotted time for the test in minutes. Optional.'),
 });
 
 // Define the input schema for the assessment generation flow
@@ -104,7 +105,8 @@ export const UserAnswerSchema = z.object({
 
 export const EvaluateAIAssessmentInputSchema = z.object({
     assessment: AIAssessmentSchema,
-    userAnswers: z.array(UserAnswerSchema)
+    userAnswers: z.array(UserAnswerSchema),
+    questionsWithAnswers: z.string().optional()
 });
 
 export type AssessmentEvaluationOutput = z.infer<typeof AssessmentEvaluationOutputSchema>;

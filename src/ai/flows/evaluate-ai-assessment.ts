@@ -12,14 +12,6 @@ import {
   type AssessmentEvaluationOutput,
 } from '@/lib/schemas';
 
-// Helper to lookup user answer by index
-ai.handlebars.registerHelper('lookup', (array, index, field) => {
-    const item = array.find((a: any) => a.questionIndex === index);
-    return item ? item[field] : 'Not Answered';
-});
-
-ai.handlebars.registerHelper('add', (a: number, b: number) => a + b);
-
 const evaluationPrompt = ai.definePrompt({
   name: 'evaluationPrompt',
   input: { schema: EvaluateAIAssessmentInputSchema },
@@ -41,23 +33,31 @@ const evaluationPrompt = ai.definePrompt({
 
       **Assessment & User Answers:**
       ---
-      {{#each assessment.questions}}
-      **Question {{add @index 1}} ({{this.questionType}}):**
-      - Question: {{{this.questionText}}}
-      - Correct Answer: {{{this.correctAnswer}}}
-      {{#if this.options}}- Options: {{#each this.options}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
-      - User's Answer: {{{lookup ../userAnswers @index "answer"}}}
-
+      {{{questionsWithAnswers}}}
       ---
-      {{/each}}
       `,
 });
 
 export async function evaluateAIAssessment(
   input: EvaluateAIAssessmentInput
 ): Promise<AssessmentEvaluationOutput> {
+  const { assessment, userAnswers } = input;
+
+  const questionsWithAnswers = assessment.questions.map((q, index) => {
+    const userAnswer = userAnswers.find(a => a.questionIndex === index)?.answer || 'Not Answered';
+    let questionText = `**Question ${index + 1} (${q.questionType}):**\n- Question: ${q.questionText}\n- Correct Answer: ${q.correctAnswer}`;
+    if (q.options && q.options.length > 0) {
+      questionText += `\n- Options: ${q.options.join(', ')}`;
+    }
+    questionText += `\n- User's Answer: ${userAnswer}\n`;
+    return questionText;
+  }).join('\n---\n');
+
+  const { output } = await evaluationPrompt({
+    ...input,
+    questionsWithAnswers
+  });
   
-  const { output } = await evaluationPrompt(input);
   if (!output) {
     throw new Error('Failed to evaluate AI assessment.');
   }
