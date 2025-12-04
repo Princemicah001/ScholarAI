@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useTransition, useState, useEffect } from "react";
-import { useDoc, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking } from "@/firebase";
+import { useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { doc, collection } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageHeader } from "@/components/page-header";
@@ -499,10 +500,20 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 setEvaluation(result);
                 
                 // Save to Firestore
-                await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/testResults`), {
+                const newTestRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/tests`), {
                     userId: user.uid,
                     studyMaterialId: material.id,
                     testType: "Mixed", // Could be more specific
+                    questionCount: assessment.questions.length,
+                    timer: assessment.timer || 0,
+                    passingScore: 70, // Example passing score
+                    creationDate: new Date().toISOString(),
+                });
+
+                await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/testResults`), {
+                    testId: newTestRef.id,
+                    userId: user.uid,
+                    studyMaterialId: material.id,
                     score: result.overallScore,
                     completionDate: new Date().toISOString(),
                     performanceSummary: `Strengths: ${result.strengthSummary}. Weaknesses: ${result.weaknessAnalysis}`,
@@ -680,7 +691,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                                 <Skeleton className="h-6 w-1/3" />
                                 <Skeleton className="h-4 w-full" />
                                 <Skeleton className="h-4 w-5/6" />
-                            </Content>
+                            </CardContent>
                         </Card>
                     )}
                 </div>
