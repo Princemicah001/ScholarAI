@@ -2,73 +2,118 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
-import {
-  Form
-} from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { createMaterialFromText, createMaterialFromUrl, createMaterialFromFile } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, FileUp, Link, Text } from 'lucide-react';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { TextTab } from './create-material-tabs/text-tab';
 import { UrlTab } from './create-material-tabs/url-tab';
 import { FileTab } from './create-material-tabs/file-tab';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 type ActiveTab = 'text' | 'url' | 'file';
-
 
 export function CreateMaterialForm() {
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('text');
   const [isPending, startTransition] = useTransition();
 
-  const form = useForm();
-  
+  const form = useForm({
+    // By default, no validation is required until a specific tab is chosen
+    resolver: async (data) => {
+        return { values: data, errors: {} };
+    }
+  });
+
   useEffect(() => {
     form.reset();
   }, [activeTab, form]);
 
   async function onSubmit(values: any) {
-    if (!user) {
-        toast({
-            variant: "destructive",
-            title: "Authentication Error",
-            description: "You must be logged in to create a material.",
-        });
-        return;
+    if (!user || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to create a material.',
+      });
+      return;
     }
 
     startTransition(async () => {
-        const formData = new FormData();
-        formData.append('userId', user.uid);
-        
-        try {
-            if (activeTab === 'text') {
-                formData.append('title', values.title!);
-                formData.append('content', values.content!);
-                await createMaterialFromText(formData);
-            } else if (activeTab === 'url') {
-                formData.append('title', values.title!);
-                formData.append('url', values.url!);
-                await createMaterialFromUrl(formData);
-            } else if (activeTab === 'file') {
-                formData.append('file', values.file);
-                await createMaterialFromFile(formData);
-            }
-            toast({
-                title: "Processing Started",
-                description: "Your material is being created and you will be redirected shortly.",
+      try {
+        let materialId: string | undefined;
+
+        if (activeTab === 'text') {
+            const result = await createMaterialFromText(values.title, values.content);
+            if(result.error) throw new Error(result.error);
+            // Save to Firestore on the client
+            const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+                userId: user.uid,
+                title: result.title,
+                sourceType: 'text',
+                extractedText: result.extractedText,
+                sourceUrl: '',
+                uploadDate: new Date().toISOString(),
             });
-        } catch (error: any) {
-            toast({
-                variant: "destructive",
-                title: "Error",
-                description: error.message || `Failed to create material from ${activeTab}.`,
+            materialId = docRef.id;
+
+        } else if (activeTab === 'url') {
+            const result = await createMaterialFromUrl(values.title, values.url);
+            if(result.error) throw new Error(result.error);
+            // Save to Firestore on the client
+             const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+                userId: user.uid,
+                title: result.title,
+                sourceType: 'url',
+                extractedText: result.extractedText,
+                sourceUrl: values.url,
+                uploadDate: new Date().toISOString(),
             });
+            materialId = docRef.id;
+
+        } else if (activeTab === 'file') {
+            const formData = new FormData();
+            formData.append('file', values.file);
+            const result = await createMaterialFromFile(formData);
+            if(result.error) throw new Error(result.error);
+            // Save to Firestore on the client
+             const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+                userId: user.uid,
+                title: result.title,
+                sourceType: 'file',
+                extractedText: result.extractedText,
+                sourceUrl: '',
+                uploadDate: new Date().toISOString(),
+            });
+            materialId = docRef.id;
         }
+        
+        toast({
+            title: "Material Created",
+            description: "Your study material has been saved successfully.",
+        });
+
+        if (materialId) {
+            router.push(`/materials/${materialId}`);
+        } else {
+            router.push('/dashboard');
+        }
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message || `Failed to create material from ${activeTab}.`,
+        });
+      }
     });
   }
 

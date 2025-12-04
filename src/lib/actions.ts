@@ -1,21 +1,13 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { firebaseConfig } from '@/firebase/config';
-import { addDoc, collection, doc, getDoc, getFirestore } from 'firebase/firestore';
+import { getDoc, doc, getFirestore } from 'firebase/firestore';
 
-import { 
-    extractContentFromUrl, 
-} from '@/ai/flows/extract-content-from-url';
-import { 
-    extractContentFromFile,
-} from '@/ai/flows/extract-content-from-file';
-import { 
-    generateStudyGuideFromContent,
-} from '@/ai/flows/generate-study-guide-from-content';
-import { GenerateStudyGuideOutput, textSchema, urlSchema, fileSchema } from '@/lib/schemas';
-
+import { extractContentFromUrl as extractContentFromUrlFlow } from '@/ai/flows/extract-content-from-url';
+import { extractContentFromFile as extractContentFromFileFlow } from '@/ai/flows/extract-content-from-file';
+import { generateStudyGuideFromContent } from '@/ai/flows/generate-study-guide-from-content';
+import { GenerateStudyGuideOutput, textSchema, urlSchema, fileSchema, GenerateStudyGuideInputSchema } from '@/lib/schemas';
 
 // This is a temporary solution to get a server-side firebase instance
 // In a real app, you would use the Admin SDK
@@ -25,95 +17,79 @@ function getUnsafeServerFirebase() {
     return { firestore };
 }
 
-async function saveMaterial(userId: string, title: string, sourceType: string, extractedText: string, sourceUrl?: string) {
-    if (!userId) {
-        throw new Error("You must be logged in to create a material.");
-    }
-    const { firestore } = getUnsafeServerFirebase();
-    const materialsCollection = collection(firestore, `users/${userId}/studyMaterials`);
+type ActionResult<T> = {
+    data?: T;
+    error?: string;
+    title?: string;
+    extractedText?: string;
+};
 
-    const newMaterial = {
-        userId,
-        title,
-        sourceType,
-        extractedText,
-        sourceUrl: sourceUrl || '',
-        uploadDate: new Date().toISOString(),
-    };
-
-    const docRef = await addDoc(materialsCollection, newMaterial);
-    return docRef.id;
-}
-
-
-export async function createMaterialFromText(formData: FormData) {
-    const values = {
-        userId: formData.get('userId'),
-        title: formData.get('title'),
-        content: formData.get('content'),
-    };
-
-    const validatedFields = textSchema.safeParse(values);
+export async function createMaterialFromText(title: string, content: string): Promise<ActionResult<any>> {
+    const validatedFields = textSchema.safeParse({ title, content });
 
     if (!validatedFields.success) {
-        throw new Error(validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.content?.[0] || 'Invalid input.');
+        return { error: validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.content?.[0] || 'Invalid input.' };
     }
 
-    const { userId, title, content } = validatedFields.data;
-
-    const docId = await saveMaterial(userId, title, 'text', content);
-    redirect(`/materials/${docId}`);
+    // No AI needed, just return the validated data
+    return { 
+        title: validatedFields.data.title,
+        extractedText: validatedFields.data.content,
+    };
 }
 
 
-export async function createMaterialFromUrl(formData: FormData) {
-    const values = {
-        userId: formData.get('userId'),
-        title: formData.get('title'),
-        url: formData.get('url'),
-    };
-    
-    const validatedFields = urlSchema.safeParse(values);
+export async function createMaterialFromUrl(title: string, url: string): Promise<ActionResult<any>> {
+    const validatedFields = urlSchema.safeParse({ title, url });
     
     if (!validatedFields.success) {
-        throw new Error(validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.url?.[0] || 'Invalid input.');
+        return { error: validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.url?.[0] || 'Invalid input.' };
     }
 
-    const { userId, title, url } = validatedFields.data;
+    const { content: extractedText } = await extractContentFromUrlFlow({ url: validatedFields.data.url });
     
-    const { content: extractedText } = await extractContentFromUrl({ url });
-    
-    const docId = await saveMaterial(userId, title, 'url', extractedText, url);
-    redirect(`/materials/${docId}`);
+    return {
+        title: validatedFields.data.title,
+        extractedText: extractedText,
+    };
 }
 
-export async function createMaterialFromFile(formData: FormData) {
+export async function createMaterialFromFile(formData: FormData): Promise<ActionResult<any>> {
      const values = {
-        userId: formData.get('userId') as string,
         file: formData.get('file') as File,
     };
 
     const validatedFields = fileSchema.safeParse(values);
     if (!validatedFields.success) {
-        throw new Error(validatedFields.error.flatten().fieldErrors.file?.[0] || 'Invalid file input.');
+        return { error: validatedFields.error.flatten().fieldErrors.file?.[0] || 'Invalid file input.' };
     }
     
-    const { userId, file } = validatedFields.data;
+    const { file } = validatedFields.data;
     const title = file.name;
 
     const buffer = Buffer.from(await file.arrayBuffer());
     const dataURI = `data:${file.type};base64,${buffer.toString('base64')}`;
 
-    const { content: extractedText } = await extractContentFromFile({ fileDataUri: dataURI });
+    const { content: extractedText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
 
-    const docId = await saveMaterial(userId, title, 'file', extractedText);
-    redirect(`/materials/${docId}`);
+    return {
+        title: title,
+        extractedText: extractedText,
+    };
 }
 
 export async function generateStudyGuide(materialId: string, userId: string): Promise<GenerateStudyGuideOutput> {
     const { firestore } = getUnsafeServerFirebase();
-    const materialRef = doc(firestore, `users/${userId}/studyMaterials`, materialId);
     
+    // Validate inputs
+    const validatedFields = GenerateStudyGuideInputSchema.safeParse({ materialId, userId });
+    if (!validatedFields.success) {
+        throw new Error('Invalid input for generating study guide.');
+    }
+    
+    const { materialId: validMaterialId, userId: validUserId } = validatedFields.data;
+
+    const materialRef = doc(firestore, `users/${validUserId}/studyMaterials`, validMaterialId);
     const materialSnap = await getDoc(materialRef);
 
     if (!materialSnap.exists()) {

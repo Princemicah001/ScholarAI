@@ -1,23 +1,28 @@
 import { z } from 'zod';
 
-// Schemas for form validation
+// Schemas for form validation on SERVER ACTIONS.
+// These are distinct from any client-side form validation.
 export const textSchema = z.object({
-  userId: z.string(),
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
   content: z.string().min(50, { message: 'Text content must be at least 50 characters.' }),
 });
 
 export const urlSchema = z.object({
-  userId: z.string(),
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
   url: z.string().url({ message: 'Please enter a valid URL.' }),
 });
 
 export const fileSchema = z.object({
-  userId: z.string(),
   file: z.instanceof(File).refine((file) => file.size > 0, 'Please upload a file.'),
 });
 
+// Schema for AI flow inputs
+export const GenerateStudyGuideInputSchema = z.object({
+  materialId: z.string(),
+  userId: z.string(),
+});
+
+// Schema for AI flow outputs
 export const GenerateStudyGuideOutputSchema = z.object({
   summary: z.string().describe('An executive summary of the content.'),
   keyPoints: z.array(z.string()).describe('A list of the most important key points or takeaways.'),
