@@ -16,6 +16,7 @@ const MaterialCard = ({ material }: { material: any }) => {
 
     React.useEffect(() => {
         if (material.uploadDate) {
+            // Format date on the client to avoid hydration mismatch
             setFormattedDate(new Date(material.uploadDate).toLocaleDateString());
         }
     }, [material.uploadDate]);

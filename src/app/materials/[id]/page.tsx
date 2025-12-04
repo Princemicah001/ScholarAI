@@ -6,7 +6,7 @@ import { doc } from "firebase/firestore";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LoaderCircle, TestTube } from "lucide-react";
@@ -261,6 +261,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
     const [isAssessmentLoading, startAssessmentTransition] = useTransition();
     const [studyGuide, setStudyGuide] = React.useState<GenerateStudyGuideOutput | null>(null);
     const [assessment, setAssessment] = React.useState<AIAssessment | null>(null);
+    const [formattedDate, setFormattedDate] = React.useState('');
 
     const materialRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -269,12 +270,10 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
 
     const { data: material, isLoading } = useDoc(materialRef);
 
-    const formattedDate = React.useMemo(() => {
-        if (!material?.uploadDate) return '';
-        try {
-            return new Date(material.uploadDate).toLocaleDateString();
-        } catch (e) {
-            return '';
+    React.useEffect(() => {
+        if (material?.uploadDate) {
+            // Format date on the client to avoid hydration mismatch
+            setFormattedDate(new Date(material.uploadDate).toLocaleDateString());
         }
     }, [material?.uploadDate]);
 
