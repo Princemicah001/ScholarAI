@@ -42,37 +42,37 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        <section
+          className="relative w-full py-12 md:py-24 lg:py-32"
+        >
+          {heroImage && (
+            <Image
+              src={heroImage.imageUrl}
+              alt={heroImage.description}
+              fill
+              className="object-cover -z-10"
+              data-ai-hint={heroImage.imageHint}
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-background to-background/50 -z-10" />
           <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Unlock Your Learning Potential with ScholarAI
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Your personal AI-powered study partner. Transform any content into study guides, quizzes, and more.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Button asChild size="lg">
-                    <NextLink href="/signup">Get Started for Free</NextLink>
-                  </Button>
-                  <Button asChild size="lg" variant="outline">
-                    <NextLink href="/login">Sign In</NextLink>
-                  </Button>
-                </div>
+            <div className="flex flex-col justify-center items-center text-center space-y-4">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-foreground">
+                  Unlock Your Learning Potential with ScholarAI
+                </h1>
+                <p className="max-w-[600px] text-foreground/80 md:text-xl">
+                  Your personal AI-powered study partner. Transform any content into study guides, quizzes, and more.
+                </p>
               </div>
-              {heroImage && (
-                <Image
-                  src={heroImage.imageUrl}
-                  width="600"
-                  height="400"
-                  alt={heroImage.description}
-                  data-ai-hint={heroImage.imageHint}
-                  className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
-                />
-              )}
+              <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <Button asChild size="lg">
+                  <NextLink href="/signup">Get Started for Free</NextLink>
+                </Button>
+                <Button asChild size="lg" variant="secondary">
+                  <NextLink href="/login">Sign In</NextLink>
+                </Button>
+              </div>
             </div>
           </div>
         </section>
