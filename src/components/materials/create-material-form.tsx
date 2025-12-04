@@ -35,7 +35,13 @@ const textSchema = z.object({
   userId: z.string(),
 });
 
-const formSchema = z.discriminatedUnion('sourceType', [urlSchema, textSchema]);
+const fileSchema = z.object({
+  sourceType: z.literal('file'),
+  file: z.any().refine(file => file instanceof File && file.size > 0, 'Please upload a file.'),
+  userId: z.string(),
+});
+
+const formSchema = z.discriminatedUnion('sourceType', [urlSchema, textSchema, fileSchema]);
 
 export function CreateMaterialForm() {
   const [activeTab, setActiveTab] = useState('url');
@@ -55,18 +61,26 @@ export function CreateMaterialForm() {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    const defaultData = {
-        userId: user?.uid || '',
-    };
     form.reset();
-    if (value === 'url') {
-      form.setValue('sourceType', 'url');
-      form.setValue('userId', defaultData.userId);
-    } else {
-      form.setValue('sourceType', 'text');
-      form.setValue('title', '');
-      form.setValue('text', '');
-      form.setValue('userId', defaultData.userId);
+    const commonValues = { userId: user?.uid || '' };
+
+    switch(value) {
+      case 'url':
+        form.setValue('sourceType', 'url');
+        form.setValue('userId', commonValues.userId);
+        form.setValue('url', '');
+        break;
+      case 'text':
+        form.setValue('sourceType', 'text');
+        form.setValue('userId', commonValues.userId);
+        form.setValue('title', '');
+        form.setValue('text', '');
+        break;
+      case 'file':
+        form.setValue('sourceType', 'file');
+        form.setValue('userId', commonValues.userId);
+        form.setValue('file', undefined);
+        break;
     }
   };
   
@@ -79,9 +93,22 @@ export function CreateMaterialForm() {
         });
         return;
     }
+
+    const formData = new FormData();
+    formData.append('sourceType', values.sourceType);
+    formData.append('userId', user.uid);
+
+    if (values.sourceType === 'url') {
+      formData.append('url', values.url);
+    } else if (values.sourceType === 'text') {
+      formData.append('title', values.title);
+      formData.append('text', values.text);
+    } else if (values.sourceType === 'file') {
+      formData.append('file', values.file);
+    }
     
     try {
-      await createMaterial({...values, userId: user.uid});
+      await createMaterial(formData);
       toast({
         title: "Material Created",
         description: "Your new study material is ready.",
@@ -100,60 +127,83 @@ export function CreateMaterialForm() {
     <Card>
       <CardContent className="p-0">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="url">From URL</TabsTrigger>
             <TabsTrigger value="text">From Text</TabsTrigger>
+            <TabsTrigger value="file">From File</TabsTrigger>
           </TabsList>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <div className="p-6">
-              <TabsContent value="url">
-                <FormField
-                  control={form.control}
-                  name="url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website URL</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://example.com/article" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
-              <TabsContent value="text" className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="title"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Introduction to Photosynthesis" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="text"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Content</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Paste your article or notes here..."
-                          className="min-h-[200px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
+                <TabsContent value="url">
+                  <FormField
+                    control={form.control}
+                    name="url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://example.com/article" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+                <TabsContent value="text" className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g., Introduction to Photosynthesis" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="text"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Content</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Paste your article or notes here..."
+                            className="min-h-[200px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
+                <TabsContent value="file">
+                  <FormField
+                    control={form.control}
+                    name="file"
+                    render={({ field: { onChange, value, ...rest } }) => (
+                      <FormItem>
+                        <FormLabel>Upload File</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg,.webp"
+                            onChange={(e) => {
+                              onChange(e.target.files ? e.target.files[0] : null);
+                            }} 
+                            {...rest}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </TabsContent>
               </div>
               <div className="flex items-center justify-end gap-2 border-t p-4">
                 <Button type="submit" disabled={isSubmitting || !user}>
