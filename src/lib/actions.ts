@@ -4,6 +4,7 @@ import { extractContentFromUrl as extractContentFromUrlFlow } from '@/ai/flows/e
 import { extractContentFromFile as extractContentFromFileFlow } from '@/ai/flows/extract-content-from-file';
 import { generateStudyGuideFromContent } from '@/ai/flows/generate-study-guide-from-content';
 import { generateAIAssessment as generateAIAssessmentFlow } from '@/ai/flows/generate-ai-assessment';
+import { evaluateAIAssessment as evaluateAIAssessmentFlow } from '@/ai/flows/evaluate-ai-assessment';
 import { 
     textSchema, 
     urlSchema, 
@@ -11,7 +12,9 @@ import {
     GenerateStudyGuideFromContentInputSchema, 
     type GenerateStudyGuideOutput,
     type GenerateAIAssessmentInput,
-    type AIAssessment
+    type AIAssessment,
+    type EvaluateAIAssessmentInput,
+    type AssessmentEvaluationOutput
 } from '@/lib/schemas';
 
 
@@ -96,4 +99,10 @@ export async function generateStudyGuide(content: string): Promise<GenerateStudy
 export async function generateAssessment(input: GenerateAIAssessmentInput): Promise<AIAssessment> {
     const assessment = await generateAIAssessmentFlow(input);
     return assessment;
+}
+
+
+export async function evaluateAssessment(input: EvaluateAIAssessmentInput): Promise<AssessmentEvaluationOutput> {
+    const evaluation = await evaluateAIAssessmentFlow(input);
+    return evaluation;
 }

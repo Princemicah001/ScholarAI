@@ -61,7 +61,53 @@ export const GenerateAIAssessmentInputSchema = z.object({
   content: z.string().describe('The source text to generate the assessment from.'),
   questionCount: z.number().min(1).max(20).describe('The number of questions to generate.'),
   questionTypes: z.array(z.enum(['multiple_choice', 'true_false', 'short_answer', 'essay'])).min(1).describe('The types of questions to generate.'),
+  timer: z.number().optional().describe('The allotted time for the test in minutes. Optional.'),
 });
 
 export type AIAssessment = z.infer<typeof AIAssessmentSchema>;
 export type GenerateAIAssessmentInput = z.infer<typeof GenerateAIAssessmentInputSchema>;
+
+
+// Schemas for Assessment Evaluation
+const EssayHighlightSchema = z.object({
+  text: z.string().describe("A segment of the user's essay text."),
+  highlight: z.enum(['green', 'orange', 'grey', 'none']).describe("Classification: green (correct/relevant), orange (partially relevant), grey (irrelevant), none (no highlight).")
+});
+
+const AlternativeEssaySchema = z.object({
+  title: z.string().describe("A title for the alternative approach (e.g., 'Focusing on the Causes')."),
+  content: z.string().describe("A brief description of how the essay could have been answered differently, including key marking points.")
+});
+
+export const EvaluationResultSchema = z.object({
+  questionIndex: z.number().describe('The index of the question being evaluated.'),
+  isCorrect: z.boolean().describe('Whether the user\'s answer was correct.'),
+  feedback: z.string().describe('Detailed feedback for the user\'s answer. For MCQ/T-F, explains the correct answer. For Short Answer, provides the ideal response. For essays, provides overall feedback.'),
+  essayEvaluation: z.object({
+    highlightedText: z.array(EssayHighlightSchema).describe("The user's essay, broken down into segments with highlight classifications."),
+    corrections: z.array(z.string()).describe("Specific points of correction for the essay."),
+    alternativeAnswers: z.array(AlternativeEssaySchema).describe("Up to 3 alternative ways the essay could have been effectively answered.")
+  }).optional().describe("Detailed evaluation specific to essay questions.")
+});
+
+export const AssessmentEvaluationOutputSchema = z.object({
+  overallScore: z.number().describe("The final percentage score for the entire assessment (0-100)."),
+  strengthSummary: z.string().describe("A brief summary of the user's strengths shown in the assessment."),
+  weaknessAnalysis: z.string().describe("A brief analysis of the user's weaknesses and areas for improvement."),
+  results: z.array(EvaluationResultSchema).describe('A detailed breakdown of the evaluation for each question.')
+});
+
+export const UserAnswerSchema = z.object({
+    questionIndex: z.number(),
+    answer: z.string(),
+});
+
+export const EvaluateAIAssessmentInputSchema = z.object({
+    assessment: AIAssessmentSchema,
+    userAnswers: z.array(UserAnswerSchema)
+});
+
+export type AssessmentEvaluationOutput = z.infer<typeof AssessmentEvaluationOutputSchema>;
+export type EvaluateAIAssessmentInput = z.infer<typeof EvaluateAIAssessmentInputSchema>;
+export type UserAnswer = z.infer<typeof UserAnswerSchema>;
+export type EvaluationResult = z.infer<typeof EvaluationResultSchema>;
