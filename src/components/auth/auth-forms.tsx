@@ -3,17 +3,16 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle } from 'lucide-react';
+import { useAuth } from '@/firebase';
+import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
 
 type AuthFormMode = 'login' | 'signup';
 
@@ -27,6 +26,7 @@ const GoogleIcon = () => (
 export function AuthForms({ mode }: { mode: AuthFormMode }) {
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,21 +37,22 @@ export function AuthForms({ mode }: { mode: AuthFormMode }) {
 
     try {
       if (mode === 'signup') {
-        await createUserWithEmailAndPassword(auth, email, password);
+        initiateEmailSignUp(auth, email, password);
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        initiateEmailSignIn(auth, email, password);
       }
-      toast({ title: 'Success', description: `Successfully ${mode === 'login' ? 'logged in' : 'signed up'}.` });
-      router.push('/dashboard');
+      // Non-blocking, so we don't await. The onAuthStateChanged listener in the provider will handle redirection.
+      // We can optimistically navigate or wait for the listener. For now, let's just let the listener handle it.
+      // A loading state could be shown here.
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
         description: error.message,
       });
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Only set loading to false on error
     }
+    // Don't set isLoading to false here in the success case. Let the redirect happen.
   };
 
   const handleGoogleSignIn = async () => {
@@ -59,15 +60,13 @@ export function AuthForms({ mode }: { mode: AuthFormMode }) {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      toast({ title: 'Success', description: 'Successfully logged in with Google.' });
-      router.push('/dashboard');
+      // Let the listener handle the redirect
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Google Sign-In Error',
         description: error.message,
       });
-    } finally {
       setIsLoading(false);
     }
   };

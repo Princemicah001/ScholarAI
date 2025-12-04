@@ -1,21 +1,50 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useUser, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookPlus } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { BookPlus, Eye } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { collection } from 'firebase/firestore';
+import { Skeleton } from '../ui/skeleton';
 
 export function RecentMaterials() {
-  const { user } = useAuth();
-  // In a real app, you would fetch recent materials for the user here.
-  const materials: any[] = [];
+  const { user } = useUser();
+  const firestore = useFirestore();
   const emptyStateImage = PlaceHolderImages.find(img => img.id === 'dashboard-empty');
 
+  const materialsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'users', user.uid, 'studyMaterials');
+  }, [firestore, user]);
 
-  if (materials.length === 0) {
+  const { data: materials, isLoading } = useCollection(materialsQuery);
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardHeader>
+            <CardContent>
+               <Skeleton className="h-10 w-full" />
+            </CardContent>
+            <CardFooter>
+                <Skeleton className="h-10 w-24" />
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+
+  if (!materials || materials.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted bg-card p-12 text-center">
         {emptyStateImage && (
@@ -45,11 +74,26 @@ export function RecentMaterials() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {materials.map((material) => (
-        <Card key={material.id}>
+        <Card key={material.id} className="flex flex-col">
           <CardHeader>
-            <CardTitle>{material.title}</CardTitle>
-            <CardDescription>{material.description}</CardDescription>
+            <CardTitle className="truncate">{material.title}</CardTitle>
+            <CardDescription>
+                Created on {new Date(material.uploadDate).toLocaleDateString()}
+            </CardDescription>
           </CardHeader>
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground line-clamp-3">
+                {material.extractedText}
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="secondary" size="sm">
+                <Link href={`/materials/${material.id}`}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View
+                </Link>
+            </Button>
+          </CardFooter>
         </Card>
       ))}
     </div>

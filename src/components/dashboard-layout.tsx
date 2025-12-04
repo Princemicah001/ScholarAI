@@ -1,6 +1,6 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useUser } from '@/firebase';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
@@ -28,7 +28,7 @@ const navItems = [
 ];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const [isClient, setIsClient] = useState(false);
@@ -38,12 +38,12 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isClient && !loading && !user) {
+    if (isClient && !isUserLoading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router, isClient]);
+  }, [user, isUserLoading, router, isClient]);
 
-  if (loading || !user) {
+  if (isUserLoading || !user) {
     return <Loading />;
   }
 

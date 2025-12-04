@@ -20,16 +20,19 @@ import { Card, CardContent } from '@/components/ui/card';
 import { createMaterial } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle } from 'lucide-react';
+import { useUser } from '@/firebase';
 
 const urlSchema = z.object({
   sourceType: z.literal('url'),
   url: z.string().url({ message: 'Please enter a valid URL.' }),
+  userId: z.string(),
 });
 
 const textSchema = z.object({
   sourceType: z.literal('text'),
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
   text: z.string().min(50, { message: 'Text must be at least 50 characters.' }),
+  userId: z.string(),
 });
 
 const formSchema = z.discriminatedUnion('sourceType', [urlSchema, textSchema]);
@@ -37,12 +40,14 @@ const formSchema = z.discriminatedUnion('sourceType', [urlSchema, textSchema]);
 export function CreateMaterialForm() {
   const [activeTab, setActiveTab] = useState('url');
   const { toast } = useToast();
+  const { user } = useUser();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       sourceType: 'url',
       url: '',
+      userId: user?.uid || '',
     },
   });
 
@@ -50,17 +55,33 @@ export function CreateMaterialForm() {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    const defaultData = {
+        userId: user?.uid || '',
+    };
     form.reset();
     if (value === 'url') {
       form.setValue('sourceType', 'url');
+      form.setValue('userId', defaultData.userId);
     } else {
       form.setValue('sourceType', 'text');
+      form.setValue('title', '');
+      form.setValue('text', '');
+      form.setValue('userId', defaultData.userId);
     }
   };
   
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user) {
+        toast({
+            variant: "destructive",
+            title: "Authentication Error",
+            description: "You must be logged in to create a material.",
+        });
+        return;
+    }
+    
     try {
-      await createMaterial(values);
+      await createMaterial({...values, userId: user.uid});
       toast({
         title: "Material Created",
         description: "Your new study material is ready.",
@@ -135,7 +156,7 @@ export function CreateMaterialForm() {
               </TabsContent>
               </div>
               <div className="flex items-center justify-end gap-2 border-t p-4">
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting || !user}>
                   {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                   Create Material
                 </Button>
