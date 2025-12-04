@@ -9,9 +9,9 @@ import {
     urlSchema, 
     fileSchema,
     GenerateStudyGuideFromContentInputSchema, 
-    GenerateStudyGuideOutput,
-    GenerateAIAssessmentInput,
-    AIAssessment
+    type GenerateStudyGuideOutput,
+    type GenerateAIAssessmentInput,
+    type AIAssessment
 } from '@/lib/schemas';
 
 
