@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { UserNav } from './user-nav';
-import { LayoutDashboard, BookPlus, History, Settings, User as UserIcon } from 'lucide-react';
+import { LayoutDashboard, BookPlus, History, Settings, User as UserIcon, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import Loading from '@/app/loading';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -132,7 +132,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   }, [user, isUserLoading, router, isClient]);
 
-  if (isUserLoading || !user) {
+  if (!isClient || isUserLoading || !user) {
     return <Loading />;
   }
 
