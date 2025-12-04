@@ -11,8 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { BookOpen, LoaderCircle, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { generateStudyGuide } from "@/lib/actions";
-import { GenerateStudyGuideOutput } from "@/lib/schemas";
+import { generateStudyGuide, generateAssessment } from "@/lib/actions";
+import { GenerateStudyGuideOutput, AIAssessment, GenerateAIAssessmentInput } from "@/lib/schemas";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
@@ -97,7 +97,9 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isGuideLoading, startGuideTransition] = useTransition();
+    const [isAssessmentLoading, startAssessmentTransition] = useTransition();
     const [studyGuide, setStudyGuide] = React.useState<GenerateStudyGuideOutput | null>(null);
+    const [assessment, setAssessment] = React.useState<AIAssessment | null>(null);
 
     const materialRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -136,6 +138,32 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         });
     }
 
+    const handleGenerateAssessment = () => {
+        if (!material?.extractedText) return;
+
+        startAssessmentTransition(async () => {
+            try {
+                const assessmentInput: GenerateAIAssessmentInput = {
+                    content: material.extractedText,
+                    questionCount: 5, // Default for now
+                    questionTypes: ['multiple_choice', 'true_false'], // Default for now
+                };
+                const generatedAssessment = await generateAssessment(assessmentInput);
+                setAssessment(generatedAssessment);
+                toast({
+                    title: "Assessment Generated",
+                    description: "Your AI-powered assessment is ready.",
+                });
+            } catch (error: any) {
+                 toast({
+                    variant: "destructive",
+                    title: "Generation Failed",
+                    description: error.message || "Could not generate the assessment.",
+                });
+            }
+        });
+    };
+
     if (isLoading) {
         return (
             <DashboardLayout>
@@ -158,7 +186,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                         <CardHeader>
                             <CardTitle>AI Tools</CardTitle>
                              <CardDescription>Generate study aids from your material.</CardDescription>
-                        </CardHeader>
+                        </Header>
                          <CardContent className="space-y-4">
                             <Skeleton className="h-10 w-full" />
                             <Skeleton className="h-10 w-full" />
@@ -213,8 +241,12 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                                 )}
                                 Generate Study Guide
                             </Button>
-                            <Button variant="secondary" disabled>
-                                <TestTube className="mr-2 h-4 w-4" />
+                             <Button variant="secondary" onClick={handleGenerateAssessment} disabled={isAssessmentLoading || !material.extractedText}>
+                                {isAssessmentLoading ? (
+                                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <TestTube className="mr-2 h-4 w-4" />
+                                )}
                                 Generate Assessment
                             </Button>
                         </CardContent>

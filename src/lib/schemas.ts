@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 // Schemas for form validation on SERVER ACTIONS.
-// These are distinct from any client-side form validation.
 export const textSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
   content: z.string().min(50, { message: 'Text content must be at least 50 characters.' }),
@@ -40,3 +39,28 @@ export const GenerateStudyGuideOutputSchema = z.object({
   mnemonics: z.array(z.string()).describe('Quick memorization cues or mnemonics to help with recall.'),
 });
 export type GenerateStudyGuideOutput = z.infer<typeof GenerateStudyGuideOutputSchema>;
+
+
+// Define the structure for a single question
+const QuestionSchema = z.object({
+  questionText: z.string().describe('The full text of the question.'),
+  questionType: z.enum(['multiple_choice', 'true_false', 'short_answer']).describe('The type of the question.'),
+  options: z.array(z.string()).optional().describe('A list of possible answers for multiple-choice questions.'),
+  correctAnswer: z.string().describe('The correct answer. For true/false, it should be "True" or "False".'),
+  explanation: z.string().describe('A brief explanation of why the answer is correct.'),
+});
+
+// Define the schema for the entire assessment
+export const AIAssessmentSchema = z.object({
+  questions: z.array(QuestionSchema).describe('A list of generated assessment questions.'),
+});
+
+// Define the input schema for the assessment generation flow
+export const GenerateAIAssessmentInputSchema = z.object({
+  content: z.string().describe('The source text to generate the assessment from.'),
+  questionCount: z.number().min(1).max(20).describe('The number of questions to generate.'),
+  questionTypes: z.array(z.enum(['multiple_choice', 'true_false', 'short_answer'])).describe('The types of questions to generate.'),
+});
+
+export type AIAssessment = z.infer<typeof AIAssessmentSchema>;
+export type GenerateAIAssessmentInput = z.infer<typeof GenerateAIAssessmentInputSchema>;

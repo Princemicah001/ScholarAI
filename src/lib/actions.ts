@@ -3,7 +3,16 @@
 import { extractContentFromUrl as extractContentFromUrlFlow } from '@/ai/flows/extract-content-from-url';
 import { extractContentFromFile as extractContentFromFileFlow } from '@/ai/flows/extract-content-from-file';
 import { generateStudyGuideFromContent } from '@/ai/flows/generate-study-guide-from-content';
-import { GenerateStudyGuideOutput, textSchema, urlSchema, fileSchema, GenerateStudyGuideFromContentInputSchema, GenerateStudyGuideOutputSchema } from '@/lib/schemas';
+import { generateAIAssessment as generateAIAssessmentFlow } from '@/ai/flows/generate-ai-assessment';
+import { 
+    textSchema, 
+    urlSchema, 
+    fileSchema,
+    GenerateStudyGuideFromContentInputSchema, 
+    GenerateStudyGuideOutput,
+    GenerateAIAssessmentInput,
+    AIAssessment
+} from '@/lib/schemas';
 
 
 type ActionResult<T> = {
@@ -20,7 +29,6 @@ export async function createMaterialFromText(title: string, content: string): Pr
         return { error: validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.content?.[0] || 'Invalid input.' };
     }
 
-    // No AI needed, just return the validated data
     return {
         title: validatedFields.data.title,
         extractedText: validatedFields.data.content,
@@ -34,7 +42,7 @@ export async function createMaterialFromUrl(title: string, url: string): Promise
     if (!validatedFields.success) {
         return { error: validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.url?.[0] || 'Invalid input.' };
     }
-
+    
     const { content: extractedText } = await extractContentFromUrlFlow({ url: validatedFields.data.url });
 
     return {
@@ -83,4 +91,9 @@ export async function generateStudyGuide(content: string): Promise<GenerateStudy
     const studyGuide = await generateStudyGuideFromContent({ content: validContent });
 
     return studyGuide;
+}
+
+export async function generateAssessment(input: GenerateAIAssessmentInput): Promise<AIAssessment> {
+    const assessment = await generateAIAssessmentFlow(input);
+    return assessment;
 }
