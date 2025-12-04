@@ -5,32 +5,15 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { GenerateStudyGuideOutputSchema } from '@/lib/actions';
 
-export const GenerateStudyGuideInputSchema = z.object({
+const GenerateStudyGuideInputSchema = z.object({
   content: z.string().describe('The source text to generate the study guide from.'),
 });
 
-export const GenerateStudyGuideOutputSchema = z.object({
-  summary: z.string().describe('An executive summary of the content.'),
-  keyPoints: z.array(z.string()).describe('A list of the most important key points or takeaways.'),
-  definitions: z.array(z.object({
-    term: z.string(),
-    definition: z.string(),
-  })).describe('A list of key terms and their definitions.'),
-  concepts: z.array(z.object({
-    concept: z.string(),
-    explanation: z.string(),
-  })).describe('A list of important concepts with detailed explanations.'),
-  examples: z.array(z.object({
-    concept: z.string(),
-    example: z.string(),
-  })).describe('Mini examples to illustrate key concepts.'),
-  mnemonics: z.array(z.string()).describe('Quick memorization cues or mnemonics to help with recall.'),
-});
+type GenerateStudyGuideInput = z.infer<typeof GenerateStudyGuideInputSchema>;
+type GenerateStudyGuideOutput = z.infer<typeof GenerateStudyGuideOutputSchema>;
 
-
-export type GenerateStudyGuideInput = z.infer<typeof GenerateStudyGuideInputSchema>;
-export type GenerateStudyGuideOutput = z.infer<typeof GenerateStudyGuideOutputSchema>;
 
 export async function generateStudyGuideFromContent(input: GenerateStudyGuideInput): Promise<GenerateStudyGuideOutput> {
   const studyGuidePrompt = ai.definePrompt({

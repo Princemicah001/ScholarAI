@@ -11,9 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { BookOpen, FileText, LoaderCircle, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { generateStudyGuide } from "@/lib/actions";
+import { generateStudyGuide, type GenerateStudyGuideOutput } from "@/lib/actions";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import type { GenerateStudyGuideOutput } from "@/ai/flows/generate-study-guide-from-content";
 
 function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
     return (
