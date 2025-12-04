@@ -12,14 +12,19 @@ import {
   type AssessmentEvaluationOutput,
 } from '@/lib/schemas';
 
-export async function evaluateAIAssessment(
-  input: EvaluateAIAssessmentInput
-): Promise<AssessmentEvaluationOutput> {
-  const evaluationPrompt = ai.definePrompt({
-    name: 'evaluationPrompt',
-    input: { schema: EvaluateAIAssessmentInputSchema },
-    output: { schema: AssessmentEvaluationOutputSchema },
-    prompt: `You are an expert educator and exam grader. Your task is to evaluate a user's performance on an assessment based on the provided questions, their correct answers, and the user's submitted answers.
+// Helper to lookup user answer by index
+ai.handlebars.registerHelper('lookup', (array, index, field) => {
+    const item = array.find((a: any) => a.questionIndex === index);
+    return item ? item[field] : 'Not Answered';
+});
+
+ai.handlebars.registerHelper('add', (a: number, b: number) => a + b);
+
+const evaluationPrompt = ai.definePrompt({
+  name: 'evaluationPrompt',
+  input: { schema: EvaluateAIAssessmentInputSchema },
+  output: { schema: AssessmentEvaluationOutputSchema },
+  prompt: `You are an expert educator and exam grader. Your task is to evaluate a user's performance on an assessment based on the provided questions, their correct answers, and the user's submitted answers.
 
       **Instructions:**
       1.  Calculate an overall percentage score (0-100).
@@ -46,16 +51,12 @@ export async function evaluateAIAssessment(
       ---
       {{/each}}
       `,
-  });
+});
 
-  // Helper to lookup user answer by index
-  ai.handlebars.registerHelper('lookup', (array, index, field) => {
-      const item = array.find((a: any) => a.questionIndex === index);
-      return item ? item[field] : 'Not Answered';
-  });
-
-  ai.handlebars.registerHelper('add', (a: number, b: number) => a + b);
-
+export async function evaluateAIAssessment(
+  input: EvaluateAIAssessmentInput
+): Promise<AssessmentEvaluationOutput> {
+  
   const { output } = await evaluationPrompt(input);
   if (!output) {
     throw new Error('Failed to evaluate AI assessment.');
