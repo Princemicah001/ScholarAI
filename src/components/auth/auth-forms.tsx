@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider,
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle } from 'lucide-react';
-import { useAuth } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 
 type AuthFormMode = 'login' | 'signup';
 
@@ -28,9 +28,17 @@ export function AuthForms({ mode }: { mode: AuthFormMode }) {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const { user, isUserLoading } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // If the user is logged in, redirect them to the dashboard.
+    if (!isUserLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
 
   const handleAuth = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -55,7 +63,6 @@ export function AuthForms({ mode }: { mode: AuthFormMode }) {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithRedirect(auth, provider);
-      // Let the listener handle the redirect logic after returning from Google
     } catch (error: any) {
       toast({
         variant: 'destructive',
