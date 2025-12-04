@@ -42,13 +42,14 @@ export type GenerateStudyGuideOutput = z.infer<typeof GenerateStudyGuideOutputSc
 
 
 // Define the structure for a single question
-const QuestionSchema = z.object({
+export const QuestionSchema = z.object({
   questionText: z.string().describe('The full text of the question.'),
   questionType: z.enum(['multiple_choice', 'true_false', 'short_answer']).describe('The type of the question.'),
   options: z.array(z.string()).optional().describe('A list of possible answers for multiple-choice questions.'),
   correctAnswer: z.string().describe('The correct answer. For true/false, it should be "True" or "False".'),
   explanation: z.string().describe('A brief explanation of why the answer is correct.'),
 });
+export type Question = z.infer<typeof QuestionSchema>;
 
 // Define the schema for the entire assessment
 export const AIAssessmentSchema = z.object({
@@ -59,7 +60,7 @@ export const AIAssessmentSchema = z.object({
 export const GenerateAIAssessmentInputSchema = z.object({
   content: z.string().describe('The source text to generate the assessment from.'),
   questionCount: z.number().min(1).max(20).describe('The number of questions to generate.'),
-  questionTypes: z.array(z.enum(['multiple_choice', 'true_false', 'short_answer'])).describe('The types of questions to generate.'),
+  questionTypes: z.array(z.enum(['multiple_choice', 'true_false', 'short_answer'])).min(1).describe('The types of questions to generate.'),
 });
 
 export type AIAssessment = z.infer<typeof AIAssessmentSchema>;
