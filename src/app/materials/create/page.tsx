@@ -7,7 +7,7 @@ export default function CreateMaterialPage() {
         <DashboardLayout>
             <PageHeader
                 title="Create New Material"
-                description="Add content from a URL or paste text to generate study tools."
+                description="Paste your content below to create a new study material."
             />
             <div className="mt-8 max-w-2xl mx-auto">
                 <CreateMaterialForm />
