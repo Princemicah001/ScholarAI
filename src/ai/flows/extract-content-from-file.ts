@@ -3,3 +3,49 @@
 /**
  * @fileOverview Extracts text content from a file using OCR.
  */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
+
+export const ExtractContentFromFileInputSchema = z.object({
+    fileDataUri: z.string().describe("A file (image, PDF, etc.) as a data URI."),
+});
+
+export const ExtractContentFromFileOutputSchema = z.object({
+    content: z.string().describe('The extracted text content from the file.'),
+});
+
+export type ExtractContentFromFileInput = z.infer<typeof ExtractContentFromFileInputSchema>;
+export type ExtractContentFromFileOutput = z.infer<typeof ExtractContentFromFileOutputSchema>;
+
+
+export async function extractContentFromFile(input: ExtractContentFromFileInput): Promise<ExtractContentFromFileOutput> {
+  return extractContentFromFileFlow(input);
+}
+
+const ocrPrompt = ai.definePrompt({
+    name: 'ocrPrompt',
+    input: { schema: ExtractContentFromFileInputSchema },
+    output: { schema: ExtractContentFromFileOutputSchema },
+    prompt: `You are an Optical Character Recognition (OCR) specialist. Your task is to extract all text from the provided file.
+    
+    File: {{media url=fileDataUri}}
+
+    Return only the full, extracted text content.
+    `,
+});
+
+const extractContentFromFileFlow = ai.defineFlow(
+    {
+        name: 'extractContentFromFileFlow',
+        inputSchema: ExtractContentFromFileInputSchema,
+        outputSchema: ExtractContentFromFileOutputSchema,
+    },
+    async (input) => {
+        const { output } = await ocrPrompt(input);
+        if (!output) {
+            throw new Error('Failed to extract content from file.');
+        }
+        return output;
+    }
+);
