@@ -6,11 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
 
 
 export default function MaterialPage({ params }: { params: { id: string } }) {
     const { user } = useUser();
     const firestore = useFirestore();
+    const [formattedDate, setFormattedDate] = React.useState('');
 
     const materialRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -18,6 +20,12 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
     }, [firestore, user, params.id]);
 
     const { data: material, isLoading } = useDoc(materialRef);
+
+    React.useEffect(() => {
+        if (material?.uploadDate) {
+            setFormattedDate(new Date(material.uploadDate).toLocaleDateString());
+        }
+    }, [material?.uploadDate]);
 
     if (isLoading) {
         return (
@@ -70,7 +78,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         <DashboardLayout>
             <PageHeader 
                 title={material.title}
-                description={`Created on ${new Date(material.uploadDate).toLocaleDateString()}`}
+                description={formattedDate ? `Created on ${formattedDate}` : <Skeleton className="h-4 w-32" />}
             >
                 {/* Action buttons (e.g., Generate Assessment) will go here */}
             </PageHeader>

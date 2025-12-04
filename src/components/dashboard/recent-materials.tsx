@@ -9,6 +9,42 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { collection } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
+import React from 'react';
+
+const MaterialCard = ({ material }: { material: any }) => {
+    const [formattedDate, setFormattedDate] = React.useState('');
+
+    React.useEffect(() => {
+        if (material.uploadDate) {
+            setFormattedDate(new Date(material.uploadDate).toLocaleDateString());
+        }
+    }, [material.uploadDate]);
+
+
+    return (
+        <Card className="flex flex-col">
+          <CardHeader>
+            <CardTitle className="truncate">{material.title}</CardTitle>
+            <CardDescription>
+                {formattedDate ? `Created on ${formattedDate}` : <Skeleton className="h-4 w-24" />}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <p className="text-sm text-muted-foreground line-clamp-3">
+                {material.extractedText}
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="secondary" size="sm">
+                <Link href={`/materials/${material.id}`}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View
+                </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+    )
+}
 
 export function RecentMaterials() {
   const { user } = useUser();
@@ -74,27 +110,7 @@ export function RecentMaterials() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {materials.map((material) => (
-        <Card key={material.id} className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="truncate">{material.title}</CardTitle>
-            <CardDescription>
-                Created on {new Date(material.uploadDate).toLocaleDateString()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <p className="text-sm text-muted-foreground line-clamp-3">
-                {material.extractedText}
-            </p>
-          </CardContent>
-          <CardFooter>
-            <Button asChild variant="secondary" size="sm">
-                <Link href={`/materials/${material.id}`}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View
-                </Link>
-            </Button>
-          </CardFooter>
-        </Card>
+        <MaterialCard key={material.id} material={material} />
       ))}
     </div>
   );
