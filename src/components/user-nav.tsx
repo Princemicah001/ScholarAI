@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -15,6 +16,7 @@ import { useUser, useAuth } from '@/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { LifeBuoy, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import { useMemo } from 'react';
 
 export function UserNav() {
   const { user } = useUser();
@@ -35,12 +37,19 @@ export function UserNav() {
     return name[0];
   };
 
+  const randomAvatarUrl = useMemo(() => {
+    if (!user) return '';
+    // Use picsum to generate a random, but consistent avatar based on user ID
+    const seed = user.uid.replace(/[^0-9]/g, '').slice(0, 5) || '1';
+    return `https://picsum.photos/seed/${seed}/100/100`;
+  }, [user]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || 'User'} />
+            <AvatarImage src={user?.photoURL || randomAvatarUrl} alt={user?.displayName || 'User'} />
             <AvatarFallback>{getInitials(user?.displayName || user?.email)}</AvatarFallback>
           </Avatar>
         </Button>

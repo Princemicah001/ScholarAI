@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useTransition, useState, useEffect } from "react";
@@ -415,6 +416,30 @@ function ResultsDisplay({ assessment, evaluation, userAnswers }: { assessment: A
     )
 }
 
+function OriginalContentDisplay({ content }: { content: string }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Original Content</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className={cn("prose dark:prose-invert max-w-none relative", !isExpanded && "max-h-48 overflow-hidden")}>
+                    <p className="whitespace-pre-wrap">{content}</p>
+                    {!isExpanded && (
+                        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-card to-transparent" />
+                    )}
+                </div>
+            </CardContent>
+            <CardFooter>
+                <Button variant="secondary" onClick={() => setIsExpanded(!isExpanded)}>
+                    {isExpanded ? 'Read Less' : 'Read More'}
+                </Button>
+            </CardFooter>
+        </Card>
+    )
+}
+
 export default function MaterialPage({ params }: { params: { id: string } }) {
     const { user } = useUser();
     const firestore = useFirestore();
@@ -499,14 +524,13 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 const result = await evaluateAssessment({ assessment, userAnswers: answers });
                 setEvaluation(result);
                 
-                // Save to Firestore
                 const newTestRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/tests`), {
                     userId: user.uid,
                     studyMaterialId: material.id,
-                    testType: "Mixed", // Could be more specific
+                    testType: "Mixed",
                     questionCount: assessment.questions.length,
                     timer: assessment.timer || 0,
-                    passingScore: 70, // Example passing score
+                    passingScore: 70, 
                     creationDate: new Date().toISOString(),
                 });
 
@@ -572,8 +596,8 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         return (
             <DashboardLayout>
                 <PageHeader
-                    title="Material not found"
-                    description="Could not find the requested study material."
+                    title="Source not found"
+                    description="Could not find the requested study source."
                 />
             </DashboardLayout>
         )
@@ -585,7 +609,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 <PageHeader title="Evaluating Assessment..." />
                 <div className="mt-8 flex flex-col items-center justify-center text-center">
                     <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                    <p className="mt-4 text-muted-foreground">Your results are being analyzed by our AI. Please wait a moment.</p>
+                    <p className="mt-4 text-muted-foreground">Your results are being analyzed by ScholarAI. Please wait a moment.</p>
                 </div>
             </DashboardLayout>
         );
@@ -624,22 +648,13 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 description={formattedDate ? `Created on ${formattedDate}` : ''}
             />
             <div className="mt-8 grid gap-8 lg:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Original Content</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="prose dark:prose-invert max-w-none">
-                            <p className="whitespace-pre-wrap">{material.extractedText}</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <OriginalContentDisplay content={material.extractedText} />
 
                 <div className="space-y-8">
                     <Card>
                         <CardHeader>
                             <CardTitle>AI Tools</CardTitle>
-                            <CardDescription>Generate study aids from your material.</CardDescription>
+                            <CardDescription>Generate study aids from your source.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 sm:grid-cols-2">
                             <Button onClick={handleGenerateStudyGuide} disabled={isGuideLoading || !material.extractedText}>

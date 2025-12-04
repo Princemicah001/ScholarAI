@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -22,7 +23,7 @@ import Loading from '@/app/loading';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/materials/create', label: 'New Material', icon: BookPlus },
+  { href: '/materials/create', label: 'New Source', icon: BookPlus },
   { href: '/history', label: 'History', icon: History },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
@@ -17,18 +18,17 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
-type ActiveTab = 'text' | 'url' | 'file';
+type ActiveTab = 'file' | 'text' | 'url';
 
 export function CreateMaterialForm() {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('text');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('file');
   const [isPending, startTransition] = useTransition();
 
   const form = useForm({
-    // By default, no validation is required until a specific tab is chosen
     resolver: async (data) => {
         return { values: data, errors: {} };
     }
@@ -43,7 +43,7 @@ export function CreateMaterialForm() {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
-        description: 'You must be logged in to create a material.',
+        description: 'You must be logged in to create a source.',
       });
       return;
     }
@@ -55,7 +55,6 @@ export function CreateMaterialForm() {
         if (activeTab === 'text') {
             const result = await createMaterialFromText(values.title, values.content);
             if(result.error) throw new Error(result.error);
-            // Save to Firestore on the client
             const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
                 userId: user.uid,
                 title: result.title,
@@ -69,7 +68,6 @@ export function CreateMaterialForm() {
         } else if (activeTab === 'url') {
             const result = await createMaterialFromUrl(values.title, values.url);
             if(result.error) throw new Error(result.error);
-            // Save to Firestore on the client
              const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
                 userId: user.uid,
                 title: result.title,
@@ -85,7 +83,6 @@ export function CreateMaterialForm() {
             formData.append('file', values.file);
             const result = await createMaterialFromFile(formData);
             if(result.error) throw new Error(result.error);
-            // Save to Firestore on the client
              const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
                 userId: user.uid,
                 title: result.title,
@@ -98,8 +95,8 @@ export function CreateMaterialForm() {
         }
         
         toast({
-            title: "Material Created",
-            description: "Your study material has been saved successfully.",
+            title: "Source Created",
+            description: "Your study source has been saved successfully.",
         });
 
         if (materialId) {
@@ -111,7 +108,7 @@ export function CreateMaterialForm() {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: error.message || `Failed to create material from ${activeTab}.`,
+          description: error.message || `Failed to create source from ${activeTab}.`,
         });
       }
     });
@@ -124,9 +121,9 @@ export function CreateMaterialForm() {
           <CardContent className="p-0">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)} className="w-full">
               <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="file"><FileUp className="mr-2 h-4 w-4" />From File</TabsTrigger>
                 <TabsTrigger value="text"><Text className="mr-2 h-4 w-4" />Paste Text</TabsTrigger>
                 <TabsTrigger value="url"><Link className="mr-2 h-4 w-4" />From URL</TabsTrigger>
-                <TabsTrigger value="file"><FileUp className="mr-2 h-4 w-4" />From File</TabsTrigger>
               </TabsList>
               
               <div className="p-6">
@@ -147,7 +144,7 @@ export function CreateMaterialForm() {
           <CardFooter className="flex items-center justify-end gap-2 border-t p-4">
             <Button type="submit" disabled={isPending || !user || !form.formState.isValid}>
               {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-              Create Material
+              Create Source
             </Button>
           </CardFooter>
         </form>

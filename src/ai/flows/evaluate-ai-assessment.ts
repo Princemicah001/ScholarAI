@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -16,7 +17,7 @@ const evaluationPrompt = ai.definePrompt({
   name: 'evaluationPrompt',
   input: { schema: EvaluateAIAssessmentInputSchema },
   output: { schema: AssessmentEvaluationOutputSchema },
-  prompt: `You are an expert educator and exam grader. Your task is to evaluate a user's performance on an assessment based on the provided questions, their correct answers, and the user's submitted answers.
+  prompt: `You are an expert university examiner with unlimited knowledge. Your task is to evaluate a user's performance on an assessment based on the provided questions, their correct answers, and the user's submitted answers. You are not limited to the provided study material and should use your full breadth of knowledge to provide accurate and comprehensive evaluations.
 
       **Instructions:**
       1.  Calculate an overall percentage score (0-100).
@@ -26,9 +27,9 @@ const evaluationPrompt = ai.definePrompt({
           -   For **short answer** questions, if the answer is incorrect or incomplete, provide the ideal, comprehensive answer.
           -   For **essay** questions, perform a detailed analysis:
               -   Provide overall feedback on the essay's structure, arguments, and accuracy.
-              -   Break down the user's essay into text segments and classify each as 'green' (highly relevant and correct), 'orange' (partially correct or relevant but incomplete), 'grey' (irrelevant or incorrect), or 'none'.
+              -   Break down the user's essay into text segments and classify each as 'green' (highly relevant and correct), 'orange' (partially correct or relevant but incomplete), or 'grey' (irrelevant or incorrect).
               -   List specific points of correction or improvement.
-              -   Suggest up to 3 distinct alternative ways the essay could have been answered, outlining the key marking points for each approach.
+              -   Suggest 3 distinct alternative ways the essay could have been answered, providing a title for each approach and outlining the key marking points.
       4.  Provide a summary of the user's strengths and a constructive analysis of their weaknesses based on their overall performance.
 
       **Assessment & User Answers:**
