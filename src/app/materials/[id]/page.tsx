@@ -6,10 +6,10 @@ import { doc } from "firebase/firestore";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText, LoaderCircle, TestTube } from "lucide-react";
+import { BookOpen, LoaderCircle, TestTube } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateStudyGuide } from "@/lib/actions";
 import { GenerateStudyGuideOutput } from "@/lib/schemas";
@@ -114,13 +114,13 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
             return '';
         }
     }, [material?.uploadDate]);
-    
+
     const handleGenerateStudyGuide = () => {
-        if (!material || !user) return;
+        if (!material?.extractedText) return;
 
         startGuideTransition(async () => {
             try {
-                const guide = await generateStudyGuide(material.id, user.uid);
+                const guide = await generateStudyGuide(material.extractedText);
                 setStudyGuide(guide);
                 toast({
                     title: "Study Guide Generated",
@@ -139,7 +139,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
     if (isLoading) {
         return (
             <DashboardLayout>
-                <PageHeader 
+                <PageHeader
                     title={<Skeleton className="h-8 w-64" />}
                     description={<Skeleton className="h-4 w-48" />}
                 />
@@ -172,7 +172,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
     if (!material) {
         return (
             <DashboardLayout>
-                <PageHeader 
+                <PageHeader
                     title="Material not found"
                     description="Could not find the requested study material."
                 />
@@ -182,7 +182,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
 
     return (
         <DashboardLayout>
-            <PageHeader 
+            <PageHeader
                 title={material.title}
                 description={formattedDate ? `Created on ${formattedDate}` : ''}
             />
@@ -197,7 +197,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                         </div>
                     </CardContent>
                 </Card>
-                
+
                 <div className="space-y-8">
                     <Card>
                         <CardHeader>
@@ -205,7 +205,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                             <CardDescription>Generate study aids from your material.</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 sm:grid-cols-2">
-                            <Button onClick={handleGenerateStudyGuide} disabled={isGuideLoading}>
+                            <Button onClick={handleGenerateStudyGuide} disabled={isGuideLoading || !material.extractedText}>
                                 {isGuideLoading ? (
                                     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                                 ) : (
@@ -219,7 +219,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                             </Button>
                         </CardContent>
                     </Card>
-                    
+
                     {isGuideLoading && (
                          <Card>
                             <CardHeader>

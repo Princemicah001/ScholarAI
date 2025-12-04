@@ -1,21 +1,10 @@
 'use server';
 
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { firebaseConfig } from '@/firebase/config';
-import { getDoc, doc, getFirestore } from 'firebase/firestore';
-
 import { extractContentFromUrl as extractContentFromUrlFlow } from '@/ai/flows/extract-content-from-url';
 import { extractContentFromFile as extractContentFromFileFlow } from '@/ai/flows/extract-content-from-file';
 import { generateStudyGuideFromContent } from '@/ai/flows/generate-study-guide-from-content';
-import { GenerateStudyGuideOutput, textSchema, urlSchema, fileSchema, GenerateStudyGuideInputSchema } from '@/lib/schemas';
+import { GenerateStudyGuideOutput, textSchema, urlSchema, fileSchema, GenerateStudyGuideFromContentInputSchema, GenerateStudyGuideOutputSchema } from '@/lib/schemas';
 
-// This is a temporary solution to get a server-side firebase instance
-// In a real app, you would use the Admin SDK
-function getUnsafeServerFirebase() {
-    const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    const firestore = getFirestore(app);
-    return { firestore };
-}
 
 type ActionResult<T> = {
     data?: T;
@@ -32,7 +21,7 @@ export async function createMaterialFromText(title: string, content: string): Pr
     }
 
     // No AI needed, just return the validated data
-    return { 
+    return {
         title: validatedFields.data.title,
         extractedText: validatedFields.data.content,
     };
@@ -41,13 +30,13 @@ export async function createMaterialFromText(title: string, content: string): Pr
 
 export async function createMaterialFromUrl(title: string, url: string): Promise<ActionResult<any>> {
     const validatedFields = urlSchema.safeParse({ title, url });
-    
+
     if (!validatedFields.success) {
         return { error: validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.url?.[0] || 'Invalid input.' };
     }
 
     const { content: extractedText } = await extractContentFromUrlFlow({ url: validatedFields.data.url });
-    
+
     return {
         title: validatedFields.data.title,
         extractedText: extractedText,
@@ -63,7 +52,7 @@ export async function createMaterialFromFile(formData: FormData): Promise<Action
     if (!validatedFields.success) {
         return { error: validatedFields.error.flatten().fieldErrors.file?.[0] || 'Invalid file input.' };
     }
-    
+
     const { file } = validatedFields.data;
     const title = file.name;
 
@@ -78,31 +67,20 @@ export async function createMaterialFromFile(formData: FormData): Promise<Action
     };
 }
 
-export async function generateStudyGuide(materialId: string, userId: string): Promise<GenerateStudyGuideOutput> {
-    const { firestore } = getUnsafeServerFirebase();
-    
-    // Validate inputs
-    const validatedFields = GenerateStudyGuideInputSchema.safeParse({ materialId, userId });
+export async function generateStudyGuide(content: string): Promise<GenerateStudyGuideOutput> {
+    const validatedFields = GenerateStudyGuideFromContentInputSchema.safeParse({ content });
+
     if (!validatedFields.success) {
-        throw new Error('Invalid input for generating study guide.');
+        throw new Error('Invalid content for generating study guide.');
     }
     
-    const { materialId: validMaterialId, userId: validUserId } = validatedFields.data;
+    const { content: validContent } = validatedFields.data;
 
-    const materialRef = doc(firestore, `users/${validUserId}/studyMaterials`, validMaterialId);
-    const materialSnap = await getDoc(materialRef);
-
-    if (!materialSnap.exists()) {
-        throw new Error("Study material not found.");
-    }
-
-    const text = materialSnap.data()?.extractedText;
-
-    if (!text) {
+    if (!validContent) {
         throw new Error("Could not find content for this material.");
     }
     
-    const studyGuide = await generateStudyGuideFromContent({ content: text });
+    const studyGuide = await generateStudyGuideFromContent({ content: validContent });
 
     return studyGuide;
 }

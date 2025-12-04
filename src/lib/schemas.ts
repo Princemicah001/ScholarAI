@@ -17,9 +17,8 @@ export const fileSchema = z.object({
 });
 
 // Schema for AI flow inputs
-export const GenerateStudyGuideInputSchema = z.object({
-  materialId: z.string(),
-  userId: z.string(),
+export const GenerateStudyGuideFromContentInputSchema = z.object({
+  content: z.string().min(1, { message: 'Content cannot be empty.' }),
 });
 
 // Schema for AI flow outputs
