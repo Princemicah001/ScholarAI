@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -43,48 +43,44 @@ const fileSchema = z.object({
 
 const formSchema = z.discriminatedUnion('sourceType', [urlSchema, textSchema, fileSchema]);
 
+type FormSchemaType = z.infer<typeof formSchema>;
+
 export function CreateMaterialForm() {
-  const [activeTab, setActiveTab] = useState('url');
+  const [activeTab, setActiveTab] = useState<'url' | 'text' | 'file'>('url');
   const { toast } = useToast();
   const { user } = useUser();
   
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormSchemaType>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       sourceType: 'url',
-      url: '',
-      userId: user?.uid || '',
     },
   });
+  
+  useEffect(() => {
+    if (user?.uid) {
+      form.setValue('userId', user.uid);
+    }
+  }, [user, form]);
+  
 
   const { isSubmitting } = form.formState;
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    form.reset();
-    const commonValues = { userId: user?.uid || '' };
-
-    switch(value) {
-      case 'url':
-        form.setValue('sourceType', 'url');
-        form.setValue('userId', commonValues.userId);
-        form.setValue('url', '');
-        break;
-      case 'text':
-        form.setValue('sourceType', 'text');
-        form.setValue('userId', commonValues.userId);
-        form.setValue('title', '');
-        form.setValue('text', '');
-        break;
-      case 'file':
-        form.setValue('sourceType', 'file');
-        form.setValue('userId', commonValues.userId);
-        form.setValue('file', undefined);
-        break;
-    }
+    const newTab = value as 'url' | 'text' | 'file';
+    setActiveTab(newTab);
+    
+    // Reset form state and set new default values for the new tab
+    form.reset({
+      sourceType: newTab,
+      userId: user?.uid || '',
+      ...(newTab === 'url' && { url: '' }),
+      ...(newTab === 'text' && { title: '', text: '' }),
+      ...(newTab === 'file' && { file: undefined }),
+    });
   };
   
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormSchemaType) {
     if (!user) {
         toast({
             variant: "destructive",
@@ -135,74 +131,82 @@ export function CreateMaterialForm() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <div className="p-6">
-                <TabsContent value="url">
-                  <FormField
-                    control={form.control}
-                    name="url"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Website URL</FormLabel>
-                        <FormControl>
-                          <Input placeholder="https://example.com/article" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <TabsContent value="url" forceMount={activeTab === 'url'}>
+                  {activeTab === 'url' && (
+                    <FormField
+                      control={form.control}
+                      name="url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Website URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://example.com/article" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </TabsContent>
-                <TabsContent value="text" className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Introduction to Photosynthesis" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="text"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Content</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Paste your article or notes here..."
-                            className="min-h-[200px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <TabsContent value="text" forceMount={activeTab === 'text'}>
+                  {activeTab === 'text' && (
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., Introduction to Photosynthesis" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="text"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Content</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Paste your article or notes here..."
+                                className="min-h-[200px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                 </TabsContent>
-                <TabsContent value="file">
-                  <FormField
-                    control={form.control}
-                    name="file"
-                    render={({ field: { onChange, value, ...rest } }) => (
-                      <FormItem>
-                        <FormLabel>Upload File</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="file"
-                            accept=".pdf,.png,.jpg,.jpeg,.webp"
-                            onChange={(e) => {
-                              onChange(e.target.files ? e.target.files[0] : null);
-                            }} 
-                            {...rest}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <TabsContent value="file" forceMount={activeTab === 'file'}>
+                  {activeTab === 'file' && (
+                    <FormField
+                      control={form.control}
+                      name="file"
+                      render={({ field: { onChange, value, ...rest } }) => (
+                        <FormItem>
+                          <FormLabel>Upload File</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="file"
+                              accept=".pdf,.png,.jpg,.jpeg,.webp"
+                              onChange={(e) => {
+                                onChange(e.target.files ? e.target.files[0] : null);
+                              }} 
+                              {...rest}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </TabsContent>
               </div>
               <div className="flex items-center justify-end gap-2 border-t p-4">
