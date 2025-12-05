@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useTransition, useState, useEffect } from "react";
@@ -221,7 +222,50 @@ function AssessmentConfigDialog({ onStart, isLoading }: { onStart: (config: Gene
 function AssessmentDisplay({ assessment, onComplete }: { assessment: AIAssessment, onComplete: (answers: UserAnswer[]) => void }) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<UserAnswer[]>([]);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
+
     const currentQuestion = assessment.questions[currentQuestionIndex];
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (assessment.timer && assessment.timer > 0) {
+            setTimeLeft(assessment.timer * 60);
+        } else {
+            setTimeLeft(null); // No timer
+        }
+    }, [assessment.timer]);
+
+    useEffect(() => {
+        if (timeLeft === null || timeLeft <= 0) return;
+
+        const intervalId = setInterval(() => {
+            setTimeLeft(prevTime => {
+                if (prevTime === null) return null;
+                const newTime = prevTime - 1;
+                if (newTime <= 0) {
+                    clearInterval(intervalId);
+                    toast({
+                        title: "Time's Up!",
+                        description: "Your assessment has been automatically submitted.",
+                    });
+                    onComplete(answers);
+                    return 0;
+                }
+                return newTime;
+            });
+        }, 1000);
+
+        return () => clearInterval(intervalId);
+    }, [timeLeft, onComplete, answers, toast]);
+
+
+    const formatTime = (seconds: number | null) => {
+        if (seconds === null) return null;
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
 
     const handleAnswerChange = (answer: string) => {
         const newAnswers = [...answers];
@@ -267,7 +311,12 @@ function AssessmentDisplay({ assessment, onComplete }: { assessment: AIAssessmen
                         <CardTitle>Assessment</CardTitle>
                         <CardDescription>Question {currentQuestionIndex + 1} of {assessment.questions.length}</CardDescription>
                     </div>
-                     {/* Timer could go here */}
+                     {timeLeft !== null && (
+                        <Badge variant="outline" className="text-lg">
+                            <TimerIcon className="mr-2 h-5 w-5" />
+                            {formatTime(timeLeft)}
+                        </Badge>
+                     )}
                 </div>
             </CardHeader>
             <CardContent>
@@ -708,3 +757,4 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
 }
 
     
+
