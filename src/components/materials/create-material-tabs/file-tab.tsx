@@ -14,18 +14,19 @@ export function FileTab({ control }: { control: Control<any> }) {
   return (
     <FormField
       control={control}
-      name="file"
-      rules={{ required: 'Please select a file.' }}
+      name="files"
+      rules={{ required: 'Please select at least one file.' }}
       render={({ field: { value, onChange, ...fieldProps } }) => (
         <FormItem>
-          <FormLabel>Upload File</FormLabel>
+          <FormLabel>Upload Files</FormLabel>
           <FormControl>
             <Input
               {...fieldProps}
               type="file"
               accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+              multiple
               onChange={(event) => {
-                onChange(event.target.files && event.target.files[0]);
+                onChange(event.target.files);
               }}
             />
           </FormControl>

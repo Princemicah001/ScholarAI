@@ -51,6 +51,7 @@ export function CreateMaterialForm() {
     startTransition(async () => {
       try {
         let materialId: string | undefined;
+        let shouldNavigateToDashboard = false;
 
         if (activeTab === 'text') {
             const result = await createMaterialFromText(values.title, values.content);
@@ -79,27 +80,41 @@ export function CreateMaterialForm() {
             materialId = docRef.id;
 
         } else if (activeTab === 'file') {
-            const formData = new FormData();
-            formData.append('file', values.file);
-            const result = await createMaterialFromFile(formData);
-            if(result.error) throw new Error(result.error);
-             const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
-                userId: user.uid,
-                title: result.title,
-                sourceType: 'file',
-                extractedText: result.extractedText,
-                sourceUrl: '',
-                uploadDate: new Date().toISOString(),
-            });
-            materialId = docRef.id;
+            const files: FileList = values.files;
+            if (!files || files.length === 0) {
+              throw new Error("No files selected.");
+            }
+            
+            shouldNavigateToDashboard = true;
+
+            await Promise.all(Array.from(files).map(async (file) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                const result = await createMaterialFromFile(formData);
+                if(result.error) {
+                    console.error(`Failed to process file ${file.name}: ${result.error}`);
+                    // Optionally show a toast for each failed file
+                    return;
+                };
+                await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+                    userId: user.uid,
+                    title: result.title,
+                    sourceType: 'file',
+                    extractedText: result.extractedText,
+                    sourceUrl: '',
+                    uploadDate: new Date().toISOString(),
+                });
+            }));
         }
         
         toast({
-            title: "Source Created",
-            description: "Your study source has been saved successfully.",
+            title: "Source(s) Created",
+            description: "Your study source(s) have been saved successfully.",
         });
 
-        if (materialId) {
+        if (shouldNavigateToDashboard) {
+            router.push('/dashboard');
+        } else if (materialId) {
             router.push(`/materials/${materialId}`);
         } else {
             router.push('/dashboard');

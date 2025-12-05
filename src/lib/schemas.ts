@@ -11,9 +11,23 @@ export const urlSchema = z.object({
   url: z.string().url({ message: 'Please enter a valid URL.' }),
 });
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+
 export const fileSchema = z.object({
-  file: z.instanceof(File).refine((file) => file.size > 0, 'Please upload a file.'),
+    file: z
+        .instanceof(File)
+        .refine((file) => file.size > 0, 'Please upload a file.')
+        .refine(
+            (file) => file.size <= MAX_FILE_SIZE,
+            `File size must be less than 5MB.`
+        )
+        .refine(
+            (file) => ACCEPTED_FILE_TYPES.includes(file.type),
+            'Unsupported file type. Please upload a PDF, DOC, DOCX, PNG, or JPG.'
+        ),
 });
+
 
 // Schema for AI flow inputs
 export const GenerateStudyGuideFromContentInputSchema = z.object({
