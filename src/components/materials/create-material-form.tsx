@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { createMaterialFromText, createMaterialFromUrl, createMaterialFromFile } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, FileUp, Link, Text } from 'lucide-react';
+import { LoaderCircle, FileUp, Link, Text, BookCopy } from 'lucide-react';
 import { useUser, useFirestore } from '@/firebase';
 import { TextTab } from './create-material-tabs/text-tab';
 import { UrlTab } from './create-material-tabs/url-tab';
@@ -17,8 +17,9 @@ import { FileTab } from './create-material-tabs/file-tab';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { OutlineTab } from './create-material-tabs/outline-tab';
 
-type ActiveTab = 'file' | 'text' | 'url';
+type ActiveTab = 'file' | 'text' | 'url' | 'outline';
 
 export function CreateMaterialForm() {
   const { toast } = useToast();
@@ -79,7 +80,7 @@ export function CreateMaterialForm() {
             });
             materialId = docRef.id;
 
-        } else if (activeTab === 'file') {
+        } else if (activeTab === 'file' || activeTab === 'outline') {
             const files: FileList = values.files;
             if (!files || files.length === 0) {
               throw new Error("No files selected.");
@@ -99,7 +100,7 @@ export function CreateMaterialForm() {
                 await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
                     userId: user.uid,
                     title: result.title,
-                    sourceType: 'file',
+                    sourceType: activeTab,
                     extractedText: result.extractedText,
                     sourceUrl: '',
                     uploadDate: new Date().toISOString(),
@@ -135,13 +136,17 @@ export function CreateMaterialForm() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="p-0">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)} className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="file"><FileUp className="mr-2 h-4 w-4" />From File</TabsTrigger>
                 <TabsTrigger value="text"><Text className="mr-2 h-4 w-4" />Paste Text</TabsTrigger>
                 <TabsTrigger value="url"><Link className="mr-2 h-4 w-4" />From URL</TabsTrigger>
+                <TabsTrigger value="outline"><BookCopy className="mr-2 h-4 w-4" />Outline</TabsTrigger>
               </TabsList>
               
               <div className="p-6">
+                <TabsContent value="file" className="space-y-4 m-0">
+                  <FileTab control={form.control} />
+                </TabsContent>
                 <TabsContent value="text" className="space-y-4 m-0">
                   <TextTab control={form.control} />
                 </TabsContent>
@@ -150,8 +155,8 @@ export function CreateMaterialForm() {
                   <UrlTab control={form.control} />
                 </TabsContent>
 
-                <TabsContent value="file" className="space-y-4 m-0">
-                  <FileTab control={form.control} />
+                <TabsContent value="outline" className="space-y-4 m-0">
+                  <OutlineTab control={form.control} />
                 </TabsContent>
               </div>
             </Tabs>
