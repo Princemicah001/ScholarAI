@@ -13,7 +13,14 @@ export const urlSchema = z.object({
 });
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+const ACCEPTED_FILE_TYPES = [
+    'application/pdf', 
+    'image/jpeg', 
+    'image/png', 
+    'image/jpg', 
+    'application/msword', 
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
 
 export const fileSchema = z.object({
     file: z
