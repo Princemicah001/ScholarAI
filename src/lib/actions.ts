@@ -47,11 +47,15 @@ export async function createMaterialFromTextOrUrl(title: string, content: string
 
     if (isValidUrl(validatedContent)) {
         // It's a URL, fetch the content
-        const { content: extractedText } = await extractContentFromUrlFlow({ url: validatedContent });
-        return {
-            title: validatedTitle,
-            extractedText: extractedText,
-        };
+        try {
+            const { content: extractedText } = await extractContentFromUrlFlow({ url: validatedContent });
+            return {
+                title: validatedTitle,
+                extractedText: extractedText,
+            };
+        } catch (e: any) {
+            return { error: `Could not extract content from URL: ${e.message}`};
+        }
     } else {
         // It's plain text
         return {
@@ -78,23 +82,27 @@ export async function createMaterialFromFile(formData: FormData): Promise<Action
     const { file: validatedFile } = validatedFields.data;
     const title = validatedFile.name;
 
-    const buffer = Buffer.from(await validatedFile.arrayBuffer());
-    const dataURI = `data:${validatedFile.type};base64,${buffer.toString('base64')}`;
+    try {
+        const buffer = Buffer.from(await validatedFile.arrayBuffer());
+        const dataURI = `data:${validatedFile.type};base64,${buffer.toString('base64')}`;
 
-    const { content: rawText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
+        const { content: rawText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
 
-    const { isOutline } = await isContentOutlineFlow({ content: rawText });
+        const { isOutline } = await isContentOutlineFlow({ content: rawText });
 
-    let finalText = rawText;
-    if (isOutline) {
-        const { notes } = await generateNotesFromOutline({ outlineContent: rawText });
-        finalText = notes;
+        let finalText = rawText;
+        if (isOutline) {
+            const { notes } = await generateNotesFromOutline({ outlineContent: rawText });
+            finalText = notes;
+        }
+
+        return {
+            title: title,
+            extractedText: finalText,
+        };
+    } catch (e: any) {
+        return { error: `Failed to process file: ${e.message}`};
     }
-
-    return {
-        title: title,
-        extractedText: finalText,
-    };
 }
 
 export async function generateStudyGuide(content: string, useOnlineSources: boolean): Promise<GenerateStudyGuideOutput> {
@@ -104,13 +112,13 @@ export async function generateStudyGuide(content: string, useOnlineSources: bool
         throw new Error('Invalid content for generating study guide.');
     }
     
-    const { content: validContent } = validatedFields.data;
+    const { content: validContent, useOnlineSources: validUseOnlineSources } = validatedFields.data;
 
     if (!validContent) {
         throw new Error("Could not find content for this material.");
     }
     
-    const studyGuide = await generateStudyGuideFromContent({ content: validContent, useOnlineSources });
+    const studyGuide = await generateStudyGuideFromContent({ content: validContent, useOnlineSources: validUseOnlineSources });
 
     return studyGuide;
 }
