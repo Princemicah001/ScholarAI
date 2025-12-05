@@ -29,7 +29,7 @@ const SourceCard = ({ source }: { source: any }) => {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex-grow">
-            <p className="text-sm text-muted-foreground line-clamp-3">
+            <p className="text-sm text-muted-foreground line-clamp-3 break-words">
                 {source.extractedText}
             </p>
           </CardContent>
@@ -83,7 +83,7 @@ export function RecentSources() {
   if (isLoadingSources || isLoadingResults) {
     return (
         <div className="space-y-8">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                  <Skeleton className="h-28 w-full" />
                  <Skeleton className="h-28 w-full" />
                  <Skeleton className="h-28 w-full" />
@@ -129,9 +129,9 @@ export function RecentSources() {
 
   return (
     <div className="space-y-8">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatsCard title="Average Score" value={`${averageScore}%`} icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}/>
-            <StatsCard title="Sources Created" value={sources.length} icon={<BookPlus className="h-4 w-4 text-muted-foreground" />}/>
+            <StatsCard title="Sources Created" value={sources?.length || 0} icon={<BookPlus className="h-4 w-4 text-muted-foreground" />}/>
             <StatsCard title="Tests Taken" value={testResults?.length || 0} icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />} />
              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
