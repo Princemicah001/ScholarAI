@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     siteName: 'Cognify',
     images: [
       {
-        url: 'https://cognify-app.com/og-image.png', // Replace with your actual Open Graph image URL
+        url: '/og-image.png', // Using a root-relative path for public assets
         width: 1200,
         height: 630,
         alt: 'Cognify - Learn Smarter, Not Harder',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     title: 'Cognify - AI-Powered Learning Tools',
     description: 'Cognify turns your documents, notes, and web pages into effective study materials using AI.',
     // creator: '@yourtwitterhandle', // Replace with your Twitter handle
-    images: ['https://cognify-app.com/twitter-image.png'], // Replace with your actual Twitter image URL
+    images: ['/twitter-image.png'], // Using a root-relative path for public assets
   },
   robots: {
     index: true,
@@ -49,6 +49,11 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  icons: {
+    icon: '/icon.png', // Main icon
+    shortcut: '/favicon.png', // Used for favicons
+    apple: '/icon.png', // Apple touch icon
+  }
 };
 
 export default function RootLayout({
