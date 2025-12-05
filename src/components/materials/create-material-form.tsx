@@ -91,7 +91,7 @@ export function CreateMaterialForm() {
             await Promise.all(Array.from(files).map(async (file) => {
                 const formData = new FormData();
                 formData.append('file', file);
-                const result = await createMaterialFromFile(formData);
+                const result = await createMaterialFromFile(formData, activeTab);
                 if(result.error) {
                     console.error(`Failed to process file ${file.name}: ${result.error}`);
                     // Optionally show a toast for each failed file

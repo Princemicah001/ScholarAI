@@ -5,6 +5,7 @@ import { extractContentFromFile as extractContentFromFileFlow } from '@/ai/flows
 import { generateStudyGuideFromContent } from '@/ai/flows/generate-study-guide-from-content';
 import { generateAIAssessment as generateAIAssessmentFlow } from '@/ai/flows/generate-ai-assessment';
 import { evaluateAIAssessment as evaluateAIAssessmentFlow } from '@/ai/flows/evaluate-ai-assessment';
+import { generateNotesFromOutline } from '@/ai/flows/generate-notes-from-outline';
 import { 
     textSchema, 
     urlSchema, 
@@ -54,7 +55,7 @@ export async function createMaterialFromUrl(title: string, url: string): Promise
     };
 }
 
-export async function createMaterialFromFile(formData: FormData): Promise<ActionResult<any>> {
+export async function createMaterialFromFile(formData: FormData, source: 'file' | 'outline'): Promise<ActionResult<any>> {
      const values = {
         file: formData.get('file') as File,
     };
@@ -70,11 +71,19 @@ export async function createMaterialFromFile(formData: FormData): Promise<Action
     const buffer = Buffer.from(await file.arrayBuffer());
     const dataURI = `data:${file.type};base64,${buffer.toString('base64')}`;
 
-    const { content: extractedText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
+    const { content: rawText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
+
+    let finalText = rawText;
+
+    if (source === 'outline') {
+        // If it's an outline, generate comprehensive notes from the raw text.
+        const { notes } = await generateNotesFromOutline({ outlineContent: rawText });
+        finalText = notes;
+    }
 
     return {
         title: title,
-        extractedText: extractedText,
+        extractedText: finalText,
     };
 }
 
