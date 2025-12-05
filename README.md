@@ -2,8 +2,6 @@
 
 Cognify is a modern web application designed to revolutionize the way you learn. By leveraging the power of generative AI, Cognify transforms your existing study materials—be it from documents, web pages, or raw text—into a suite of powerful learning tools. Create dynamic study guides, generate custom assessments, and track your progress, all in one place.
 
-![Cognify Screenshot](https://picsum.photos/seed/cognify-readme/1200/630)
-
 ## ✨ Key Features
 
 -   **Multi-Source Content Extraction**: Upload PDFs, Word documents, images, paste text, or simply provide a URL. Cognify's AI extracts the core content for you.
