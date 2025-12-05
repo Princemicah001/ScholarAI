@@ -86,26 +86,38 @@ export function CreateMaterialForm() {
               throw new Error("No files selected.");
             }
             
-            shouldNavigateToDashboard = true;
+            if (files.length > 1) {
+              shouldNavigateToDashboard = true;
+            }
 
-            await Promise.all(Array.from(files).map(async (file) => {
+            const creationPromises = Array.from(files).map(async (file) => {
                 const formData = new FormData();
                 formData.append('file', file);
                 const result = await createMaterialFromFile(formData, activeTab);
                 if(result.error) {
                     console.error(`Failed to process file ${file.name}: ${result.error}`);
                     // Optionally show a toast for each failed file
-                    return;
+                    return null;
                 };
-                await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+                const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
                     userId: user.uid,
                     title: result.title,
-                    sourceType: activeTab,
+                    sourceType: activeTab === 'outline' ? 'outline' : 'file',
                     extractedText: result.extractedText,
                     sourceUrl: '',
                     uploadDate: new Date().toISOString(),
                 });
-            }));
+                return docRef.id;
+            });
+            
+            const results = await Promise.all(creationPromises);
+            const successfulIds = results.filter(id => id !== null) as string[];
+
+            if (successfulIds.length === 1) {
+                materialId = successfulIds[0];
+            } else if (successfulIds.length > 1) {
+                shouldNavigateToDashboard = true;
+            }
         }
         
         toast({
@@ -118,6 +130,7 @@ export function CreateMaterialForm() {
         } else if (materialId) {
             router.push(`/materials/${materialId}`);
         } else {
+            // Fallback to dashboard if something went wrong and we don't have an ID
             router.push('/dashboard');
         }
       } catch (error: any) {
