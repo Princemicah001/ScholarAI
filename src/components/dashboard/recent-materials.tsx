@@ -89,7 +89,7 @@ export function RecentSources() {
                  <Skeleton className="h-28 w-full" />
                  <Skeleton className="h-28 w-full" />
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {[...Array(3)].map((_, i) => (
                 <Card key={i}>
                     <CardHeader>
@@ -144,7 +144,7 @@ export function RecentSources() {
         </div>
         <div>
             <h3 className="text-xl font-bold tracking-tight mb-4">Recent Sources</h3>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
             {sources.map((source) => (
                 <SourceCard key={source.id} source={source} />
             ))}
