@@ -154,7 +154,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen w-full">
         <Sidebar>
           <SidebarHeader>
             <Logo />
@@ -199,3 +199,5 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    

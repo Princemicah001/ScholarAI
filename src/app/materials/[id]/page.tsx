@@ -453,7 +453,10 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
 
     useEffect(() => {
         if (material?.uploadDate) {
-            setFormattedDate(new Date(material.uploadDate).toLocaleDateString());
+            const date = new Date(material.uploadDate);
+            if (!isNaN(date.getTime())) {
+                setFormattedDate(date.toLocaleDateString());
+            }
         }
     }, [material?.uploadDate]);
 
@@ -636,7 +639,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 title={material.title}
                 description={formattedDate ? `Created on ${formattedDate}` : ''}
             />
-            <div className="mt-8 grid gap-8 lg:grid-cols-2">
+            <div className="mt-8 flex flex-col gap-8 lg:grid lg:grid-cols-2">
                 <OriginalContentDisplay content={material.extractedText} />
 
                 <div className="space-y-8">
@@ -645,7 +648,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                             <CardTitle>AI Tools</CardTitle>
                             <CardDescription>Generate study aids from your source.</CardDescription>
                         </CardHeader>
-                        <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <Button onClick={handleGenerateStudyGuide} disabled={isGuideLoading || !material.extractedText}>
                                 {isGuideLoading ? (
                                     <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
@@ -703,3 +706,5 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         </DashboardLayout>
     );
 }
+
+    
