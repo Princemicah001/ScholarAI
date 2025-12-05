@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { createMaterialFromTextOrUrl, createMaterialFromFile } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, FileUp, Link, Text } from 'lucide-react';
+import { LoaderCircle, FileUp, Text, FileText as FileTextIcon, X } from 'lucide-react';
 import { useUser, useFirestore } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection } from 'firebase/firestore';
@@ -32,6 +32,8 @@ export function CreateMaterialForm() {
         return { values: data, errors: {} };
     }
   });
+
+  const selectedFiles: FileList | undefined = form.watch('files');
 
   useEffect(() => {
     form.reset();
@@ -147,31 +149,49 @@ export function CreateMaterialForm() {
                    <FormField
                       control={form.control}
                       name="files"
-                      rules={{ required: 'Please select at least one file.' }}
-                      render={({ field: { value, onChange, ...fieldProps } }) => (
+                      rules={{ required: activeTab === 'file' ? 'Please select at least one file.' : false }}
+                      render={({ field: { onChange, ...fieldProps } }) => (
                         <FormItem>
                           <FormLabel>Upload Files (PDF, DOCX, JPG, etc.)</FormLabel>
                           <FormControl>
-                             <div className="flex items-center justify-center w-full">
-                                <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                        <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
-                                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                                        <p className="text-xs text-muted-foreground">PDF, DOCX, PNG, JPG (MAX. 5MB)</p>
+                             <div>
+                                {selectedFiles && selectedFiles.length > 0 ? (
+                                    <div className="space-y-2">
+                                        {Array.from(selectedFiles).map((file, index) => (
+                                            <div key={index} className="flex items-center justify-between rounded-md border p-2">
+                                                <div className="flex items-center gap-2">
+                                                    <FileTextIcon className="h-5 w-5 text-muted-foreground" />
+                                                    <span className="text-sm font-medium">{file.name}</span>
+                                                </div>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => form.setValue('files', undefined)}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
                                     </div>
-                                    <Input 
-                                      id="dropzone-file" 
-                                      {...fieldProps}
-                                      type="file"
-                                      className="hidden"
-                                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
-                                      multiple
-                                      onChange={(event) => {
-                                        onChange(event.target.files);
-                                      }}
-                                    />
-                                </label>
-                            </div> 
+                                ) : (
+                                     <div className="flex items-center justify-center w-full">
+                                        <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
+                                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                                <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
+                                                <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                                <p className="text-xs text-muted-foreground">PDF, DOCX, PNG, JPG (MAX. 5MB)</p>
+                                            </div>
+                                            <Input 
+                                            id="dropzone-file" 
+                                            {...fieldProps}
+                                            type="file"
+                                            className="hidden"
+                                            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                                            multiple
+                                            onChange={(event) => {
+                                                onChange(event.target.files);
+                                            }}
+                                            />
+                                        </label>
+                                    </div> 
+                                )}
+                             </div>
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -183,7 +203,7 @@ export function CreateMaterialForm() {
                       <FormField
                         control={form.control}
                         name="title"
-                        rules={{ required: 'Please enter a title.' }}
+                        rules={{ required: activeTab === 'text' ? 'Please enter a title.' : false }}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Title</FormLabel>
@@ -197,7 +217,7 @@ export function CreateMaterialForm() {
                       <FormField
                         control={form.control}
                         name="content"
-                        rules={{ required: 'Please paste your content or a URL.' }}
+                        rules={{ required: activeTab === 'text' ? 'Please paste your content or a URL.' : false }}
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Content or URL</FormLabel>
@@ -218,7 +238,7 @@ export function CreateMaterialForm() {
             </Tabs>
           </CardContent>
           <CardFooter className="flex items-center justify-end gap-2 border-t p-4">
-            <Button type="submit" disabled={isPending || !user || !form.formState.isValid}>
+            <Button type="submit" disabled={isPending || !user}>
               {isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
               Create Source
             </Button>
