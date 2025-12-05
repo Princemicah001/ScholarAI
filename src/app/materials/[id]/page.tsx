@@ -601,7 +601,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 <PageHeader title="Evaluating Assessment..." />
                 <div className="mt-8 flex flex-col items-center justify-center text-center">
                     <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                    <p className="mt-4 text-muted-foreground">Your results are being analyzed by ScholarAI. Please wait a moment.</p>
+                    <p className="mt-4 text-muted-foreground">Your results are being analyzed by Cognify. Please wait a moment.</p>
                 </div>
             </DashboardLayout>
         );
@@ -639,7 +639,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 title={material.title}
                 description={formattedDate ? `Created on ${formattedDate}` : ''}
             />
-            <div className="mt-8 flex flex-col gap-8 lg:grid lg:grid-cols-2">
+            <div className="mt-8 grid flex-col gap-8 lg:grid-cols-2">
                 <OriginalContentDisplay content={material.extractedText} />
 
                 <div className="space-y-8">

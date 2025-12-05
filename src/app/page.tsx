@@ -60,7 +60,7 @@ export default function Home() {
             <div className="flex flex-col justify-center items-center text-center space-y-4">
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-foreground">
-                  Unlock Your Learning Potential with ScholarAI
+                  Unlock Your Learning Potential with Cognify
                 </h1>
                 <p className="max-w-[600px] text-foreground/80 md:text-xl">
                   Your personal AI-powered study partner. Transform any content into study guides, quizzes, and more.
@@ -85,7 +85,7 @@ export default function Home() {
                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Key Features</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Learn Smarter, Not Harder</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  ScholarAI provides a suite of powerful tools to enhance your study sessions and boost your academic performance.
+                  Cognify provides a suite of powerful tools to enhance your study sessions and boost your academic performance.
                 </p>
               </div>
             </div>
@@ -119,14 +119,14 @@ export default function Home() {
             </div>
             <div className="mx-auto w-full max-w-sm space-y-2">
                <Button asChild size="lg" className="w-full">
-                  <NextLink href="/signup">Join ScholarAI Now</NextLink>
+                  <NextLink href="/signup">Join Cognify Now</NextLink>
                 </Button>
             </div>
           </div>
         </section>
       </main>
       <footer className="flex items-center justify-center w-full h-24">
-        <p className="text-muted-foreground">&copy; 2024 ScholarAI. All rights reserved.</p>
+        <p className="text-muted-foreground">&copy; 2024 Cognify. All rights reserved.</p>
       </footer>
     </div>
   );

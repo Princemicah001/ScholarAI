@@ -8,7 +8,7 @@ import { FirebaseClientProvider } from '@/firebase';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'ScholarAI',
+  title: 'Cognify',
   description: 'AI-powered study tools for modern learners.',
 };
 
