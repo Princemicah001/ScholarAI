@@ -7,9 +7,9 @@ import { generateStudyGuideFromContent } from '@/ai/flows/generate-study-guide-f
 import { generateAIAssessment as generateAIAssessmentFlow } from '@/ai/flows/generate-ai-assessment';
 import { evaluateAIAssessment as evaluateAIAssessmentFlow } from '@/ai/flows/evaluate-ai-assessment';
 import { generateNotesFromOutline } from '@/ai/flows/generate-notes-from-outline';
+import { isContentOutline as isContentOutlineFlow } from '@/ai/flows/is-content-outline';
 import { 
-    textSchema, 
-    urlSchema, 
+    textAndUrlSchema, 
     fileSchema,
     GenerateStudyGuideInputSchema, 
     type GenerateStudyGuideOutput,
@@ -27,36 +27,42 @@ type ActionResult<T> = {
     extractedText?: string;
 };
 
-export async function createMaterialFromText(title: string, content: string): Promise<ActionResult<any>> {
-    const validatedFields = textSchema.safeParse({ title, content });
+function isValidUrl(string: string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+export async function createMaterialFromTextOrUrl(title: string, content: string): Promise<ActionResult<any>> {
+    const validatedFields = textAndUrlSchema.safeParse({ title, content });
 
     if (!validatedFields.success) {
         return { error: validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.content?.[0] || 'Invalid input.' };
     }
 
-    return {
-        title: validatedFields.data.title,
-        extractedText: validatedFields.data.content,
-    };
-}
+    const { title: validatedTitle, content: validatedContent } = validatedFields.data;
 
-
-export async function createMaterialFromUrl(title: string, url: string): Promise<ActionResult<any>> {
-    const validatedFields = urlSchema.safeParse({ title, url });
-
-    if (!validatedFields.success) {
-        return { error: validatedFields.error.flatten().fieldErrors.title?.[0] || validatedFields.error.flatten().fieldErrors.url?.[0] || 'Invalid input.' };
+    if (isValidUrl(validatedContent)) {
+        // It's a URL, fetch the content
+        const { content: extractedText } = await extractContentFromUrlFlow({ url: validatedContent });
+        return {
+            title: validatedTitle,
+            extractedText: extractedText,
+        };
+    } else {
+        // It's plain text
+        return {
+            title: validatedTitle,
+            extractedText: validatedContent,
+        };
     }
-    
-    const { content: extractedText } = await extractContentFromUrlFlow({ url: validatedFields.data.url });
-
-    return {
-        title: validatedFields.data.title,
-        extractedText: extractedText,
-    };
 }
 
-export async function createMaterialFromFile(formData: FormData, source: 'file' | 'outline'): Promise<ActionResult<any>> {
+
+export async function createMaterialFromFile(formData: FormData): Promise<ActionResult<any>> {
      const values = {
         file: formData.get('file') as File,
     };
@@ -74,10 +80,10 @@ export async function createMaterialFromFile(formData: FormData, source: 'file' 
 
     const { content: rawText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
 
-    let finalText = rawText;
+    const { isOutline } = await isContentOutlineFlow({ content: rawText });
 
-    if (source === 'outline') {
-        // If it's an outline, generate comprehensive notes from the raw text.
+    let finalText = rawText;
+    if (isOutline) {
         const { notes } = await generateNotesFromOutline({ outlineContent: rawText });
         finalText = notes;
     }

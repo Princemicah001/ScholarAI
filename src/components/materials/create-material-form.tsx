@@ -3,23 +3,21 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
-import { Form } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { createMaterialFromText, createMaterialFromUrl, createMaterialFromFile } from '@/lib/actions';
+import { createMaterialFromTextOrUrl, createMaterialFromFile } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { LoaderCircle, FileUp, Link, Text, BookCopy } from 'lucide-react';
+import { LoaderCircle, FileUp, Link, Text } from 'lucide-react';
 import { useUser, useFirestore } from '@/firebase';
-import { TextTab } from './create-material-tabs/text-tab';
-import { UrlTab } from './create-material-tabs/url-tab';
-import { FileTab } from './create-material-tabs/file-tab';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { OutlineTab } from './create-material-tabs/outline-tab';
+import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
 
-type ActiveTab = 'file' | 'text' | 'url' | 'outline';
+type ActiveTab = 'file' | 'text';
 
 export function CreateMaterialForm() {
   const { toast } = useToast();
@@ -55,32 +53,19 @@ export function CreateMaterialForm() {
         let shouldNavigateToDashboard = false;
 
         if (activeTab === 'text') {
-            const result = await createMaterialFromText(values.title, values.content);
+            const result = await createMaterialFromTextOrUrl(values.title, values.content);
             if(result.error) throw new Error(result.error);
             const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
                 userId: user.uid,
                 title: result.title,
-                sourceType: 'text',
+                sourceType: 'text/url',
                 extractedText: result.extractedText,
                 sourceUrl: '',
                 uploadDate: new Date().toISOString(),
             });
             materialId = docRef.id;
 
-        } else if (activeTab === 'url') {
-            const result = await createMaterialFromUrl(values.title, values.url);
-            if(result.error) throw new Error(result.error);
-             const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
-                userId: user.uid,
-                title: result.title,
-                sourceType: 'url',
-                extractedText: result.extractedText,
-                sourceUrl: values.url,
-                uploadDate: new Date().toISOString(),
-            });
-            materialId = docRef.id;
-
-        } else if (activeTab === 'file' || activeTab === 'outline') {
+        } else if (activeTab === 'file') {
             const files: FileList = values.files;
             if (!files || files.length === 0) {
               throw new Error("No files selected.");
@@ -93,16 +78,20 @@ export function CreateMaterialForm() {
             const creationPromises = Array.from(files).map(async (file) => {
                 const formData = new FormData();
                 formData.append('file', file);
-                const result = await createMaterialFromFile(formData, activeTab);
+                const result = await createMaterialFromFile(formData);
                 if(result.error) {
                     console.error(`Failed to process file ${file.name}: ${result.error}`);
-                    // Optionally show a toast for each failed file
+                    toast({
+                      variant: 'destructive',
+                      title: `Processing Failed for ${file.name}`,
+                      description: result.error,
+                    });
                     return null;
                 };
                 const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
                     userId: user.uid,
                     title: result.title,
-                    sourceType: activeTab === 'outline' ? 'outline' : 'file',
+                    sourceType: 'file',
                     extractedText: result.extractedText,
                     sourceUrl: '',
                     uploadDate: new Date().toISOString(),
@@ -129,8 +118,7 @@ export function CreateMaterialForm() {
             router.push('/dashboard');
         } else if (materialId) {
             router.push(`/materials/${materialId}`);
-        } else {
-            // Fallback to dashboard if something went wrong and we don't have an ID
+        } else if (activeTab !== 'file') { // If not a file upload and no materialId, something went wrong
             router.push('/dashboard');
         }
       } catch (error: any) {
@@ -149,27 +137,82 @@ export function CreateMaterialForm() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <CardContent className="p-0">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ActiveTab)} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="file"><FileUp className="mr-2 h-4 w-4" />From File</TabsTrigger>
-                <TabsTrigger value="text"><Text className="mr-2 h-4 w-4" />Paste Text</TabsTrigger>
-                <TabsTrigger value="url"><Link className="mr-2 h-4 w-4" />From URL</TabsTrigger>
-                <TabsTrigger value="outline"><BookCopy className="mr-2 h-4 w-4" />Outline</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="file"><FileUp className="mr-2 h-4 w-4" />Upload File</TabsTrigger>
+                <TabsTrigger value="text"><Text className="mr-2 h-4 w-4" />Text or URL</TabsTrigger>
               </TabsList>
               
               <div className="p-6">
                 <TabsContent value="file" className="space-y-4 m-0">
-                  <FileTab control={form.control} />
+                   <FormField
+                      control={form.control}
+                      name="files"
+                      rules={{ required: 'Please select at least one file.' }}
+                      render={({ field: { value, onChange, ...fieldProps } }) => (
+                        <FormItem>
+                          <FormLabel>Upload Files (PDF, DOCX, JPG, etc.)</FormLabel>
+                          <FormControl>
+                             <div className="flex items-center justify-center w-full">
+                                <label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <FileUp className="w-8 h-8 mb-4 text-muted-foreground" />
+                                        <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">Click to upload</span> or drag and drop</p>
+                                        <p className="text-xs text-muted-foreground">PDF, DOCX, PNG, JPG (MAX. 5MB)</p>
+                                    </div>
+                                    <Input 
+                                      id="dropzone-file" 
+                                      {...fieldProps}
+                                      type="file"
+                                      className="hidden"
+                                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                                      multiple
+                                      onChange={(event) => {
+                                        onChange(event.target.files);
+                                      }}
+                                    />
+                                </label>
+                            </div> 
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </TabsContent>
                 <TabsContent value="text" className="space-y-4 m-0">
-                  <TextTab control={form.control} />
-                </TabsContent>
-                
-                <TabsContent value="url" className="space-y-4 m-0">
-                  <UrlTab control={form.control} />
-                </TabsContent>
-
-                <TabsContent value="outline" className="space-y-4 m-0">
-                  <OutlineTab control={form.control} />
+                   <>
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        rules={{ required: 'Please enter a title.' }}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., Photosynthesis Notes" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="content"
+                        rules={{ required: 'Please paste your content or a URL.' }}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Content or URL</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Paste your study material or a web URL here..."
+                                className="min-h-[200px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
                 </TabsContent>
               </div>
             </Tabs>

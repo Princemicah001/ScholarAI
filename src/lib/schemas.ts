@@ -12,6 +12,11 @@ export const urlSchema = z.object({
   url: z.string().url({ message: 'Please enter a valid URL.' }),
 });
 
+export const textAndUrlSchema = z.object({
+  title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
+  content: z.string().min(10, { message: 'Input must be at least 10 characters or a valid URL.' }),
+});
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = [
     'application/pdf', 
