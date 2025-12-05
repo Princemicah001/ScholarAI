@@ -63,20 +63,23 @@ export async function createMaterialFromTextOrUrl(title: string, content: string
 
 
 export async function createMaterialFromFile(formData: FormData): Promise<ActionResult<any>> {
-     const values = {
-        file: formData.get('file') as File,
-    };
+     const file = formData.get('file') as File;
+     if (!file) {
+        return { error: 'No file found in form data.' };
+     }
+
+     const values = { file };
 
     const validatedFields = fileSchema.safeParse(values);
     if (!validatedFields.success) {
         return { error: validatedFields.error.flatten().fieldErrors.file?.[0] || 'Invalid file input.' };
     }
 
-    const { file } = validatedFields.data;
-    const title = file.name;
+    const { file: validatedFile } = validatedFields.data;
+    const title = validatedFile.name;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const dataURI = `data:${file.type};base64,${buffer.toString('base64')}`;
+    const buffer = Buffer.from(await validatedFile.arrayBuffer());
+    const dataURI = `data:${validatedFile.type};base64,${buffer.toString('base64')}`;
 
     const { content: rawText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
 
