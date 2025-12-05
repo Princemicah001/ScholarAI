@@ -1,17 +1,16 @@
 
-
 'use client';
 
 import React, { useTransition, useState, useEffect } from "react";
 import { useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { doc, collection } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LoaderCircle, TestTube, CheckCircle, XCircle, TimerIcon } from "lucide-react";
+import { BookOpen, LoaderCircle, TestTube, CheckCircle, XCircle, TimerIcon, Sparkles, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateStudyGuide, generateAssessment, evaluateAssessment } from "@/lib/actions";
 import { 
@@ -21,7 +20,8 @@ import {
     Question, 
     UserAnswer,
     AssessmentEvaluationOutput,
-    EvaluationResult
+    EvaluationResult,
+    StudyGuide,
 } from "@/lib/schemas";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -31,84 +31,91 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { Switch } from "@/components/ui/switch";
 
 
 function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
     return (
-        <Accordion type="multiple" defaultValue={['summary', 'key-points']} className="w-full">
-            <AccordionItem value="summary">
-                <AccordionTrigger>Executive Summary</AccordionTrigger>
-                <AccordionContent className="prose dark:prose-invert max-w-none">
-                    <p>{studyGuide.summary}</p>
-                </AccordionContent>
-            </AccordionItem>
-             <AccordionItem value="key-points">
-                <AccordionTrigger>Key Points</AccordionTrigger>
-                <AccordionContent className="prose dark:prose-invert max-w-none">
-                    <ul>
-                        {studyGuide.keyPoints.map((point, index) => (
-                            <li key={index}>{point}</li>
-                        ))}
-                    </ul>
-                </AccordionContent>
-            </AccordionItem>
-            {studyGuide.definitions.length > 0 && (
-                <AccordionItem value="definitions">
-                    <AccordionTrigger>Definitions</AccordionTrigger>
-                    <AccordionContent className="prose dark:prose-invert max-w-none">
-                        <dl>
-                            {studyGuide.definitions.map((item, index) => (
-                                <React.Fragment key={index}>
-                                    <dt>{item.term}</dt>
-                                    <dd>{item.definition}</dd>
-                                </React.Fragment>
-                            ))}
-                        </dl>
-                    </AccordionContent>
-                </AccordionItem>
-            )}
-             {studyGuide.concepts.length > 0 && (
-                <AccordionItem value="concepts">
-                    <AccordionTrigger>Explained Concepts</AccordionTrigger>
-                    <AccordionContent className="prose dark:prose-invert max-w-none">
-                         {studyGuide.concepts.map((item, index) => (
-                            <div key={index} className="mb-4">
-                                <strong>{item.concept}</strong>
-                                <p>{item.explanation}</p>
-                            </div>
-                        ))}
-                    </AccordionContent>
-                </AccordionItem>
-            )}
-             {studyGuide.examples.length > 0 && (
-                <AccordionItem value="examples">
-                    <AccordionTrigger>Examples</AccordionTrigger>
-                    <AccordionContent className="prose dark:prose-invert max-w-none">
-                        {studyGuide.examples.map((item, index) => (
-                            <div key={index} className="mb-4">
-                                <strong>{item.concept}</strong>
-                                <p>{item.example}</p>
-                            </div>
-                        ))}
-                    </AccordionContent>
-                </AccordionItem>
-             )}
-             {studyGuide.mnemonics.length > 0 && (
-                <AccordionItem value="mnemonics">
-                    <AccordionTrigger>Memorization Cues</AccordionTrigger>
-                    <AccordionContent className="prose dark:prose-invert max-w-none">
-                       <ul>
-                            {studyGuide.mnemonics.map((cue, index) => (
-                                <li key={index}>{cue}</li>
-                            ))}
-                        </ul>
-                    </AccordionContent>
-                </AccordionItem>
-             )}
-        </Accordion>
+        <Card>
+            <CardHeader>
+                <CardTitle>AI Generated Study Guide</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <Accordion type="multiple" defaultValue={['summary', 'key-points']} className="w-full">
+                    <AccordionItem value="summary">
+                        <AccordionTrigger>Executive Summary</AccordionTrigger>
+                        <AccordionContent className="prose dark:prose-invert max-w-none">
+                            <p>{studyGuide.summary}</p>
+                        </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="key-points">
+                        <AccordionTrigger>Key Points</AccordionTrigger>
+                        <AccordionContent className="prose dark:prose-invert max-w-none">
+                            <ul>
+                                {studyGuide.keyPoints.map((point, index) => (
+                                    <li key={index}>{point}</li>
+                                ))}
+                            </ul>
+                        </AccordionContent>
+                    </AccordionItem>
+                    {studyGuide.definitions.length > 0 && (
+                        <AccordionItem value="definitions">
+                            <AccordionTrigger>Definitions</AccordionTrigger>
+                            <AccordionContent className="prose dark:prose-invert max-w-none">
+                                <dl>
+                                    {studyGuide.definitions.map((item, index) => (
+                                        <React.Fragment key={index}>
+                                            <dt className="font-bold">{item.term}</dt>
+                                            <dd className="ml-4 mb-2">{item.definition}</dd>
+                                        </React.Fragment>
+                                    ))}
+                                </dl>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                    {studyGuide.concepts.length > 0 && (
+                        <AccordionItem value="concepts">
+                            <AccordionTrigger>Explained Concepts</AccordionTrigger>
+                            <AccordionContent className="prose dark:prose-invert max-w-none">
+                                {studyGuide.concepts.map((item, index) => (
+                                    <div key={index} className="mb-4">
+                                        <strong className="font-semibold">{item.concept}</strong>
+                                        <p>{item.explanation}</p>
+                                    </div>
+                                ))}
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                    {studyGuide.examples.length > 0 && (
+                        <AccordionItem value="examples">
+                            <AccordionTrigger>Examples</AccordionTrigger>
+                            <AccordionContent className="prose dark:prose-invert max-w-none">
+                                {studyGuide.examples.map((item, index) => (
+                                    <div key={index} className="mb-4">
+                                        <strong className="font-semibold">{item.concept}</strong>
+                                        <p>{item.example}</p>
+                                    </div>
+                                ))}
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                    {studyGuide.mnemonics.length > 0 && (
+                        <AccordionItem value="mnemonics">
+                            <AccordionTrigger>Memorization Cues</AccordionTrigger>
+                            <AccordionContent className="prose dark:prose-invert max-w-none">
+                            <ul>
+                                    {studyGuide.mnemonics.map((cue, index) => (
+                                        <li key={index}>{cue}</li>
+                                    ))}
+                                </ul>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                </Accordion>
+            </CardContent>
+        </Card>
     )
 }
 
@@ -354,9 +361,7 @@ const getHighlightColor = (highlight: 'green' | 'orange' | 'grey' | 'none') => {
   }
 };
 
-function ResultsDisplay({ assessment, evaluation, userAnswers }: { assessment: AIAssessment, evaluation: AssessmentEvaluationOutput, userAnswers: UserAnswer[] }) {
-    const router = useRouter();
-
+function ResultsDisplay({ assessment, evaluation, userAnswers, onRetake, onFinish }: { assessment: AIAssessment, evaluation: AssessmentEvaluationOutput, userAnswers: UserAnswer[], onRetake: () => void, onFinish: () => void }) {
     return (
         <div className="space-y-8">
             <Card>
@@ -446,8 +451,9 @@ function ResultsDisplay({ assessment, evaluation, userAnswers }: { assessment: A
                         })}
                     </Accordion>
                 </CardContent>
-                <CardFooter>
-                    <Button onClick={() => router.push('/dashboard')}>Back to Dashboard</Button>
+                <CardFooter className="flex justify-between">
+                    <Button variant="secondary" onClick={onRetake}>Take a New Test</Button>
+                    <Button onClick={onFinish}>Back to Study Guide</Button>
                 </CardFooter>
             </Card>
         </div>
@@ -478,6 +484,69 @@ function OriginalContentDisplay({ content }: { content: string }) {
     )
 }
 
+function StudyGuideConfigDialog({ onStart, isLoading }: { onStart: (useOnline: boolean) => void; isLoading: boolean; }) {
+    const [useOnlineSources, setUseOnlineSources] = React.useState(false);
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button disabled={isLoading}>
+                    {isLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : <BookOpen className="mr-2 h-4 w-4" />}
+                    Generate Study Guide
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Configure Study Guide</DialogTitle>
+                    <DialogDescription>
+                        Choose how you want to generate your study guide.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <div className="flex items-center space-x-2">
+                        <Switch id="online-sources" checked={useOnlineSources} onCheckedChange={setUseOnlineSources} />
+                        <Label htmlFor="online-sources">Enrich with online sources</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                        Allow Cognify to use reliable online sources to provide a more comprehensive guide.
+                    </p>
+                </div>
+                <DialogFooter>
+                    <Button onClick={() => onStart(useOnlineSources)} disabled={isLoading}>
+                        {isLoading ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" /> : "Generate"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function AskCognify() {
+    return (
+        <Card className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    <MessageCircle />
+                    Ask Cognify (Premium)
+                </CardTitle>
+                <CardDescription className="text-primary-foreground/80">
+                    Have a question? Chat with Cognify to get instant clarification on your study material.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Textarea placeholder="Ask a question about your content..." className="text-foreground" />
+            </CardContent>
+            <CardFooter>
+                <Button variant="secondary" className="w-full">
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Start Chat
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+
+
 export default function MaterialPage({ params }: { params: { id: string } }) {
     const { user } = useUser();
     const firestore = useFirestore();
@@ -486,7 +555,9 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
     const [isAssessmentLoading, startAssessmentTransition] = useTransition();
     const [isEvaluating, startEvaluationTransition] = useTransition();
 
-    const [studyGuide, setStudyGuide] = useState<GenerateStudyGuideOutput | null>(null);
+    const [view, setView] = useState<'guide' | 'assessment' | 'results' | 'loading'>('guide');
+
+    const [studyGuide, setStudyGuide] = useState<StudyGuide | null>(null);
     const [assessment, setAssessment] = useState<AIAssessment | null>(null);
     const [userAnswers, setUserAnswers] = useState<UserAnswer[] | null>(null);
     const [evaluation, setEvaluation] = useState<AssessmentEvaluationOutput | null>(null);
@@ -498,7 +569,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         return doc(firestore, 'users', user.uid, 'studyMaterials', params.id);
     }, [firestore, user, params.id]);
 
-    const { data: material, isLoading } = useDoc(materialRef);
+    const { data: material, isLoading: isMaterialLoading } = useDoc(materialRef);
 
     useEffect(() => {
         if (material?.uploadDate) {
@@ -507,15 +578,22 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 setFormattedDate(date.toLocaleDateString());
             }
         }
-    }, [material?.uploadDate]);
+        if (material?.studyGuide) {
+            setStudyGuide(material.studyGuide);
+        }
+    }, [material]);
 
-    const handleGenerateStudyGuide = () => {
-        if (!material?.extractedText) return;
+    const handleGenerateStudyGuide = (useOnlineSources: boolean) => {
+        if (!material?.extractedText || !user || !materialRef) return;
 
         startGuideTransition(async () => {
             try {
-                const guide = await generateStudyGuide(material.extractedText);
-                setStudyGuide(guide);
+                const guide = await generateStudyGuide(material.extractedText, useOnlineSources);
+                const guideWithId: StudyGuide = { ...guide, id: new Date().toISOString() };
+                
+                setDocumentNonBlocking(materialRef, { studyGuide: guideWithId }, { merge: true });
+                setStudyGuide(guideWithId);
+
                 toast({
                     title: "Study Guide Generated",
                     description: "Your AI-powered study guide is ready.",
@@ -535,14 +613,14 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
 
         startAssessmentTransition(async () => {
             try {
+                setView('loading');
                 const assessmentInput: GenerateAIAssessmentInput = {
                     ...config,
                     content: material.extractedText,
                 };
                 const generatedAssessment = await generateAssessment(assessmentInput);
                 setAssessment(generatedAssessment);
-                setStudyGuide(null); // Hide study guide when assessment starts
-                setEvaluation(null);
+                setView('assessment');
                 toast({
                     title: "Assessment Generated",
                     description: "Your AI-powered assessment is ready.",
@@ -553,6 +631,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                     title: "Generation Failed",
                     description: error.message || "Could not generate the assessment.",
                 });
+                 setView('guide');
             }
         });
     };
@@ -562,6 +641,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         setUserAnswers(answers);
         startEvaluationTransition(async () => {
             try {
+                setView('loading');
                 const result = await evaluateAssessment({ assessment, userAnswers: answers });
                 setEvaluation(result);
                 
@@ -573,6 +653,8 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                     timer: assessment.timer || 0,
                     passingScore: 70, 
                     creationDate: new Date().toISOString(),
+                    assessment, // save the test itself
+                    userAnswers: answers, // save the answers
                 });
 
                 await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/testResults`), {
@@ -585,6 +667,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                     recommendations: "Review the feedback provided for incorrect answers."
                 });
 
+                setView('results');
                 toast({
                     title: "Assessment Evaluated",
                     description: "Check out your results below.",
@@ -596,11 +679,19 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                     title: "Evaluation Failed",
                     description: error.message || "Could not evaluate your assessment.",
                 });
+                setView('assessment');
             }
         });
     }
 
-    if (isLoading) {
+    const resetToGuide = () => {
+        setAssessment(null);
+        setEvaluation(null);
+        setUserAnswers(null);
+        setView('guide');
+    }
+
+    if (isMaterialLoading) {
         return (
             <DashboardLayout>
                 <PageHeader
@@ -608,16 +699,6 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                     description={<Skeleton className="h-4 w-48" />}
                 />
                  <div className="mt-8 grid gap-8 md:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Original Content</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-3/4" />
-                        </CardContent>
-                    </Card>
                     <Card>
                         <CardHeader>
                             <CardTitle>AI Tools</CardTitle>
@@ -628,6 +709,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                             <Skeleton className="h-10 w-full" />
                         </CardContent>
                     </Card>
+                    <Skeleton className="h-64 w-full" />
                 </div>
             </DashboardLayout>
         )
@@ -644,42 +726,48 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         )
     }
 
-    if (isEvaluating) {
-        return (
-            <DashboardLayout>
-                <PageHeader title="Evaluating Assessment..." />
-                <div className="mt-8 flex flex-col items-center justify-center text-center">
-                    <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                    <p className="mt-4 text-muted-foreground">Your results are being analyzed by Cognify. Please wait a moment.</p>
-                </div>
-            </DashboardLayout>
-        );
-    }
-    
-    if (evaluation && assessment && userAnswers) {
-         return (
-            <DashboardLayout>
-                <PageHeader
-                    title={`${material.title} - Results`}
-                />
-                <div className="mt-8 max-w-4xl mx-auto">
-                    <ResultsDisplay assessment={assessment} evaluation={evaluation} userAnswers={userAnswers} />
-                </div>
-            </DashboardLayout>
-        )
-    }
-
-    if (assessment) {
-        return (
-            <DashboardLayout>
-                <PageHeader
-                    title={`${material.title} - Assessment`}
-                />
-                <div className="mt-8 max-w-4xl mx-auto">
-                    <AssessmentDisplay assessment={assessment} onComplete={handleAssessmentComplete} />
-                </div>
-            </DashboardLayout>
-        )
+    const renderContent = () => {
+        switch (view) {
+            case 'assessment':
+                if (assessment) return <AssessmentDisplay assessment={assessment} onComplete={handleAssessmentComplete} />;
+                return null;
+            case 'results':
+                if (assessment && evaluation && userAnswers) return <ResultsDisplay assessment={assessment} evaluation={evaluation} userAnswers={userAnswers} onRetake={() => setView('guide')} onFinish={resetToGuide} />;
+                return null;
+            case 'loading':
+                 return (
+                    <div className="mt-8 flex flex-col items-center justify-center text-center h-96">
+                        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+                        <p className="mt-4 text-muted-foreground">Cognify is working its magic. Please wait a moment.</p>
+                    </div>
+                );
+            case 'guide':
+            default:
+                return (
+                    <div className="mt-8 grid flex-col gap-8 lg:grid-cols-2">
+                        <div className="space-y-8">
+                             {studyGuide ? (
+                                <StudyGuideDisplay studyGuide={studyGuide} />
+                            ) : (
+                                <OriginalContentDisplay content={material.extractedText} />
+                            )}
+                        </div>
+                        <div className="space-y-8">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>AI Tools</CardTitle>
+                                    <CardDescription>Generate study aids from your source.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <StudyGuideConfigDialog onStart={handleGenerateStudyGuide} isLoading={isGuideLoading} />
+                                    <AssessmentConfigDialog onStart={handleGenerateAssessment} isLoading={isAssessmentLoading} />
+                                </CardContent>
+                            </Card>
+                            <AskCognify />
+                        </div>
+                    </div>
+                );
+        }
     }
 
     return (
@@ -688,73 +776,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 title={material.title}
                 description={formattedDate ? `Created on ${formattedDate}` : ''}
             />
-            <div className="mt-8 grid flex-col gap-8 lg:grid-cols-2">
-                <OriginalContentDisplay content={material.extractedText} />
-
-                <div className="space-y-8">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>AI Tools</CardTitle>
-                            <CardDescription>Generate study aids from your source.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <Button onClick={handleGenerateStudyGuide} disabled={isGuideLoading || !material.extractedText}>
-                                {isGuideLoading ? (
-                                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <BookOpen className="mr-2 h-4 w-4" />
-                                )}
-                                Generate Study Guide
-                            </Button>
-                            <AssessmentConfigDialog onStart={handleGenerateAssessment} isLoading={isAssessmentLoading} />
-                        </CardContent>
-                    </Card>
-
-                    {isGuideLoading && (
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>Generating Study Guide...</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <Skeleton className="h-6 w-1/3" />
-                                <Skeleton className="h-4 w-full" />
-                                <Skeleton className="h-4 w-5/6" />
-                                <br/>
-                                <Skeleton className="h-6 w-1/4" />
-                                <Skeleton className="h-4 w-full" />
-                                <Skeleton className="h-4 w-full" />
-                            </CardContent>
-                        </Card>
-                    )}
-                    
-                    {studyGuide && (
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>AI Generated Study Guide</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <StudyGuideDisplay studyGuide={studyGuide} />
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {isAssessmentLoading && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Generating Assessment...</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <Skeleton className="h-6 w-1/3" />
-                                <Skeleton className="h-4 w-full" />
-                                <Skeleton className="h-4 w-5/6" />
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            </div>
+            {renderContent()}
         </DashboardLayout>
     );
 }
-
-    
-

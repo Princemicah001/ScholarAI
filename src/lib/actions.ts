@@ -1,3 +1,4 @@
+
 'use server';
 
 import { extractContentFromUrl as extractContentFromUrlFlow } from '@/ai/flows/extract-content-from-url';
@@ -10,7 +11,7 @@ import {
     textSchema, 
     urlSchema, 
     fileSchema,
-    GenerateStudyGuideFromContentInputSchema, 
+    GenerateStudyGuideInputSchema, 
     type GenerateStudyGuideOutput,
     type GenerateAIAssessmentInput,
     type AIAssessment,
@@ -87,8 +88,8 @@ export async function createMaterialFromFile(formData: FormData, source: 'file' 
     };
 }
 
-export async function generateStudyGuide(content: string): Promise<GenerateStudyGuideOutput> {
-    const validatedFields = GenerateStudyGuideFromContentInputSchema.safeParse({ content });
+export async function generateStudyGuide(content: string, useOnlineSources: boolean): Promise<GenerateStudyGuideOutput> {
+    const validatedFields = GenerateStudyGuideInputSchema.safeParse({ content, useOnlineSources });
 
     if (!validatedFields.success) {
         throw new Error('Invalid content for generating study guide.');
@@ -100,7 +101,7 @@ export async function generateStudyGuide(content: string): Promise<GenerateStudy
         throw new Error("Could not find content for this material.");
     }
     
-    const studyGuide = await generateStudyGuideFromContent({ content: validContent });
+    const studyGuide = await generateStudyGuideFromContent({ content: validContent, useOnlineSources });
 
     return studyGuide;
 }

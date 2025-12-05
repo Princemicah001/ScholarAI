@@ -4,11 +4,13 @@
 import { useUser, useCollection, useMemoFirebase, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { BookPlus, Eye, TrendingUp, CheckCircle } from 'lucide-react';
+import { BookPlus, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import React from 'react';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const SourceCard = ({ source }: { source: any }) => {
     const [formattedDate, setFormattedDate] = React.useState('');
@@ -45,51 +47,24 @@ const SourceCard = ({ source }: { source: any }) => {
     )
 }
 
-const StatsCard = ({ title, value, icon }: { title: string, value: React.ReactNode, icon: React.ReactNode }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            {icon}
-        </CardHeader>
-        <CardContent>
-            <div className="text-2xl font-bold">{value}</div>
-        </CardContent>
-    </Card>
-)
-
 export function RecentSources() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const emptyDashboardImage = PlaceHolderImages.find((img) => img.id === 'dashboard-empty');
 
   const sourcesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'users', user.uid, 'studyMaterials'), orderBy('uploadDate', 'desc'), limit(3));
   }, [firestore, user]);
 
-  const testResultsQuery = useMemoFirebase(() => {
-      if (!firestore || !user) return null;
-      return collection(firestore, 'users', user.uid, 'testResults');
-  }, [firestore, user])
-
   const { data: sources, isLoading: isLoadingSources } = useCollection(sourcesQuery);
-  const { data: testResults, isLoading: isLoadingResults } = useCollection(testResultsQuery);
 
-  const averageScore = React.useMemo(() => {
-      if (!testResults || testResults.length === 0) return 0;
-      const total = testResults.reduce((acc, curr) => acc + curr.score, 0);
-      return Math.round(total / testResults.length);
-  }, [testResults])
 
-  if (isLoadingSources || isLoadingResults) {
+  if (isLoadingSources) {
     return (
-        <div className="space-y-8">
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                 <Skeleton className="h-28 w-full" />
-                 <Skeleton className="h-28 w-full" />
-                 <Skeleton className="h-28 w-full" />
-                 <Skeleton className="h-28 w-full" />
-            </div>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div>
+            <h3 className="text-xl font-bold tracking-tight mb-4">Recent Sources</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[...Array(3)].map((_, i) => (
                 <Card key={i}>
                     <CardHeader>
@@ -112,7 +87,8 @@ export function RecentSources() {
 
   if (!sources || sources.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted bg-card p-12 text-center">
+      <div className="text-center rounded-lg border-2 border-dashed border-muted bg-card p-12 flex flex-col items-center">
+         {emptyDashboardImage && <Image src={emptyDashboardImage.imageUrl} alt="Empty dashboard" width={200} height={200} className="mb-4 rounded-md" data-ai-hint={emptyDashboardImage.imageHint} />}
         <h3 className="text-2xl font-bold tracking-tight">No sources yet</h3>
         <p className="mb-4 text-muted-foreground">
           Get started by creating your first study source.
@@ -128,27 +104,12 @@ export function RecentSources() {
   }
 
   return (
-    <div className="space-y-8">
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatsCard title="Average Score" value={`${averageScore}%`} icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}/>
-            <StatsCard title="Sources Created" value={sources?.length || 0} icon={<BookPlus className="h-4 w-4 text-muted-foreground" />}/>
-            <StatsCard title="Tests Taken" value={testResults?.length || 0} icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />} />
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Goals</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-xs text-muted-foreground">Feature coming soon.</p>
-                </CardContent>
-            </Card>
-        </div>
-        <div>
-            <h3 className="text-xl font-bold tracking-tight mb-4">Recent Sources</h3>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
-            {sources.map((source) => (
-                <SourceCard key={source.id} source={source} />
-            ))}
-            </div>
+    <div>
+        <h3 className="text-xl font-bold tracking-tight mb-4">Recent Sources</h3>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {sources.map((source) => (
+            <SourceCard key={source.id} source={source} />
+        ))}
         </div>
     </div>
   );

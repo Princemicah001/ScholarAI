@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 // Schemas for form validation on SERVER ACTIONS.
@@ -30,9 +31,11 @@ export const fileSchema = z.object({
 
 
 // Schema for AI flow inputs
-export const GenerateStudyGuideFromContentInputSchema = z.object({
+export const GenerateStudyGuideInputSchema = z.object({
   content: z.string().min(1, { message: 'Content cannot be empty.' }),
+  useOnlineSources: z.boolean().describe('Whether to use external online sources to enrich the guide.'),
 });
+
 
 // Schema for AI flow outputs
 export const GenerateStudyGuideOutputSchema = z.object({
@@ -127,3 +130,23 @@ export type AssessmentEvaluationOutput = z.infer<typeof AssessmentEvaluationOutp
 export type EvaluateAIAssessmentInput = z.infer<typeof EvaluateAIAssessmentInputSchema>;
 export type UserAnswer = z.infer<typeof UserAnswerSchema>;
 export type EvaluationResult = z.infer<typeof EvaluationResultSchema>;
+
+export const StudyGuideSchema = z.object({
+  id: z.string(),
+  summary: z.string(),
+  keyPoints: z.array(z.string()),
+  definitions: z.array(z.object({
+    term: z.string(),
+    definition: z.string(),
+  })),
+  concepts: z.array(z.object({
+    concept: z.string(),
+    explanation: z.string(),
+  })),
+  examples: z.array(z.object({
+    concept: z.string(),
+    example: z.string(),
+  })),
+  mnemonics: z.array(z.string()),
+});
+export type StudyGuide = z.infer<typeof StudyGuideSchema>;
