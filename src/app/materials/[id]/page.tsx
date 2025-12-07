@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
+import { useParams } from "next/navigation";
 
 
 function StudyGuideDisplay({ studyGuide, materialTitle }: { studyGuide: GenerateStudyGuideOutput, materialTitle: string }) {
@@ -620,7 +621,9 @@ function TestHistory({ tests, onReview }: { tests: any[], onReview: (test: any, 
 }
 
 
-export default function MaterialPage({ params: { id } }: { params: { id: string } }) {
+export default function MaterialPage() {
+    const params = useParams();
+    const id = params.id as string;
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
