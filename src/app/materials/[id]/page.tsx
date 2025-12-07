@@ -37,6 +37,12 @@ import { Switch } from "@/components/ui/switch";
 
 
 function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
+    
+    const cleanMnemonic = (text: string) => {
+        // This will remove leading list-style asterisks and surrounding bold/italic asterisks
+        return text.replace(/^\s*\*\s*/, '').replace(/\*\*/g, '');
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -107,7 +113,7 @@ function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutpu
                             <AccordionContent className="prose dark:prose-invert max-w-none">
                             <ul>
                                     {studyGuide.mnemonics.map((cue, index) => (
-                                        <li key={index}>{cue.replace(/^\s*\*\s*/, '')}</li>
+                                        <li key={index}>{cleanMnemonic(cue)}</li>
                                     ))}
                                 </ul>
                             </AccordionContent>
@@ -780,3 +786,5 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         </DashboardLayout>
     );
 }
+
+    
