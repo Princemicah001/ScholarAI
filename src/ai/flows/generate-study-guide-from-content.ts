@@ -5,7 +5,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { GenerateStudyGuideOutputSchema } from '@/lib/schemas';
 
 const GenerateStudyGuideInputSchema = z.object({

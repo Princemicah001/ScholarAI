@@ -29,7 +29,7 @@ export async function askCognify(input: AskCognifyInput): Promise<AskCognifyOutp
       `,
     },
   );
-
+  
   const { output } = await askCognifyPrompt(input);
   if (!output) {
     throw new Error('Failed to get a response from the AI.');

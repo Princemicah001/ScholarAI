@@ -64,14 +64,15 @@ export async function evaluateAIAssessment(
     questionIndex: index,
   }));
   
-  const { output } = await evaluationPrompt({
+  const promptInput = {
     assessment: {
       ...assessment,
       questions: questionsWithIndex,
     },
     userAnswers: answerMap,
-  });
-  
+  };
+
+  const { output } = await evaluationPrompt(promptInput);
   if (!output) {
     throw new Error('Failed to evaluate AI assessment.');
   }
