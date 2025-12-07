@@ -107,7 +107,7 @@ function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutpu
                             <AccordionContent className="prose dark:prose-invert max-w-none">
                             <ul>
                                     {studyGuide.mnemonics.map((cue, index) => (
-                                        <li key={index}>{cue}</li>
+                                        <li key={index}>{cue.replace(/^\s*\*\s*/, '')}</li>
                                     ))}
                                 </ul>
                             </AccordionContent>
