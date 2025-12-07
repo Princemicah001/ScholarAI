@@ -162,3 +162,19 @@ export const StudyGuideSchema = z.object({
   mnemonics: z.array(z.string()),
 });
 export type StudyGuide = z.infer<typeof StudyGuideSchema>;
+
+// Schemas for "Ask Cognify" Chatbot
+export const AskCognifyInputSchema = z.object({
+  query: z.string().describe("The user's question."),
+  history: z.array(z.object({
+    role: z.enum(['user', 'model']),
+    content: z.string(),
+  })).describe('The conversation history.'),
+});
+
+export const AskCognifyOutputSchema = z.object({
+  response: z.string().describe("The AI's response to the user's query."),
+});
+
+export type AskCognifyInput = z.infer<typeof AskCognifyInputSchema>;
+export type AskCognifyOutput = z.infer<typeof AskCognifyOutputSchema>;

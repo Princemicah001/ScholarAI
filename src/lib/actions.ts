@@ -8,7 +8,7 @@ import { generateAIAssessment as generateAIAssessmentFlow } from '@/ai/flows/gen
 import { evaluateAIAssessment as evaluateAIAssessmentFlow } from '@/ai/flows/evaluate-ai-assessment';
 import { generateNotesFromOutline } from '@/ai/flows/generate-notes-from-outline';
 import { isContentOutline as isContentOutlineFlow } from '@/ai/flows/is-content-outline';
-import { askCognify as askCognifyFlow, type AskCognifyInput } from '@/ai/flows/ask-cognify-flow';
+import { askCognify as askCognifyFlow } from '@/ai/flows/ask-cognify-flow';
 import { 
     textAndUrlSchema, 
     fileSchema,
@@ -17,7 +17,8 @@ import {
     type GenerateAIAssessmentInput,
     type AIAssessment,
     type EvaluateAIAssessmentInput,
-    type AssessmentEvaluationOutput
+    type AssessmentEvaluationOutput,
+    type AskCognifyInput
 } from '@/lib/schemas';
 
 
