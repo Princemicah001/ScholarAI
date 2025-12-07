@@ -77,33 +77,39 @@ export function CreateMaterialForm() {
               shouldNavigateToDashboard = true;
             }
 
-            const creationPromises = Array.from(files).map(async (file) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                const result = await createMaterialFromFile(formData);
-                if(result.error) {
-                    console.error(`Failed to process file ${file.name}: ${result.error}`);
+            const successfulIds: string[] = [];
+            // Process files sequentially to avoid rate-limiting
+            for (const file of Array.from(files)) {
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const result = await createMaterialFromFile(formData);
+                    if(result.error) {
+                        throw new Error(result.error);
+                    };
+                    const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+                        userId: user.uid,
+                        title: result.title,
+                        extractedText: result.extractedText,
+                        sourceType: 'file',
+                        sourceUrl: '',
+                        uploadDate: new Date().toISOString(),
+                    });
+                    if (docRef.id) {
+                      successfulIds.push(docRef.id);
+                    }
+                } catch (e: any) {
+                    console.error(`Failed to process file ${file.name}: ${e.message}`);
                     toast({
                       variant: 'destructive',
                       title: `Processing Failed for ${file.name}`,
-                      description: result.error,
+                      description: e.message,
                     });
-                    return null;
-                };
-                const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
-                    userId: user.uid,
-                    title: result.title,
-                    sourceType: 'file',
-                    extractedText: result.extractedText,
-                    sourceUrl: '',
-                    uploadDate: new Date().toISOString(),
-                });
-                return docRef.id;
-            });
+                    // Stop processing further files on error
+                    break;
+                }
+            }
             
-            const results = await Promise.all(creationPromises);
-            const successfulIds = results.filter(id => id !== null) as string[];
-
             if (successfulIds.length === 1) {
                 materialId = successfulIds[0];
             } else if (successfulIds.length > 1) {
