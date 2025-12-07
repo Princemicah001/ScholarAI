@@ -130,7 +130,7 @@ export function ProgressOverview() {
                                     />
                                     </linearGradient>
                                 </defs>
-                                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} />
                                 <ChartTooltipContent />
                                 <Area type="monotone" dataKey="score" stroke="var(--color-score)" strokeWidth={2} fill="url(#fillScore)" />
                             </AreaChart>
