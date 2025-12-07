@@ -18,8 +18,7 @@ const IsContentOutlineOutputSchema = z.object({
 type IsContentOutlineInput = z.infer<typeof IsContentOutlineInputSchema>;
 type IsContentOutlineOutput = z.infer<typeof IsContentOutlineOutputSchema>;
 
-export async function isContentOutline(input: IsContentOutlineInput): Promise<IsContentOutlineOutput> {
-  const outlineCheckPrompt = ai.definePrompt({
+const outlineCheckPrompt = ai.definePrompt({
     name: 'outlineCheckPrompt',
     input: { schema: IsContentOutlineInputSchema },
     output: { schema: IsContentOutlineOutputSchema },
@@ -36,6 +35,7 @@ Content to Analyze:
 `,
   });
 
+export async function isContentOutline(input: IsContentOutlineInput): Promise<IsContentOutlineOutput> {
   const { output } = await outlineCheckPrompt(input);
   if (!output) {
     // Default to false if the AI fails to respond.

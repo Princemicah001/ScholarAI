@@ -16,13 +16,11 @@ const GenerateStudyGuideInputSchema = z.object({
 type GenerateStudyGuideInput = z.infer<typeof GenerateStudyGuideInputSchema>;
 type GenerateStudyGuideOutput = z.infer<typeof GenerateStudyGuideOutputSchema>;
 
-
-export async function generateStudyGuideFromContent(input: GenerateStudyGuideInput): Promise<GenerateStudyGuideOutput> {
-  const studyGuidePrompt = ai.definePrompt({
-    name: 'studyGuidePrompt',
-    input: { schema: GenerateStudyGuideInputSchema },
-    output: { schema: GenerateStudyGuideOutputSchema },
-    prompt: `You are an expert educator and study coach with a talent for making complex topics understandable and memorable. Your task is to create a comprehensive, well-structured study guide from the provided text, formatted in clear markdown.
+const studyGuidePrompt = ai.definePrompt({
+  name: 'studyGuidePrompt',
+  input: { schema: GenerateStudyGuideInputSchema },
+  output: { schema: GenerateStudyGuideOutputSchema },
+  prompt: `You are an expert educator and study coach with a talent for making complex topics understandable and memorable. Your task is to create a comprehensive, well-structured study guide from the provided text, formatted in clear markdown.
 
   **Instructions:**
   1.  **Executive Summary**: Write a concise overview of the entire text.
@@ -43,8 +41,10 @@ export async function generateStudyGuideFromContent(input: GenerateStudyGuideInp
   {{{content}}}
   ---
   `,
-  });
+});
 
+
+export async function generateStudyGuideFromContent(input: GenerateStudyGuideInput): Promise<GenerateStudyGuideOutput> {
   const { output } = await studyGuidePrompt(input);
   if (!output) {
     throw new Error('Failed to generate study guide.');

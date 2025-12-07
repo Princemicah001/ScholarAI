@@ -8,13 +8,11 @@
 import { ai } from '@/ai/genkit';
 import { GenerateAIAssessmentInputSchema, AIAssessmentSchema, type GenerateAIAssessmentInput, type AIAssessment } from '@/lib/schemas';
 
-
-export async function generateAIAssessment(input: GenerateAIAssessmentInput): Promise<AIAssessment> {
-  const assessmentPrompt = ai.definePrompt({
-    name: 'assessmentPrompt',
-    input: { schema: GenerateAIAssessmentInputSchema },
-    output: { schema: AIAssessmentSchema },
-    prompt: `You are an expert test creator for an educational platform. Your task is to generate a set of assessment questions based on the provided study material.
+const assessmentPrompt = ai.definePrompt({
+  name: 'assessmentPrompt',
+  input: { schema: GenerateAIAssessmentInputSchema },
+  output: { schema: AIAssessmentSchema },
+  prompt: `You are an expert test creator for an educational platform. Your task is to generate a set of assessment questions based on the provided study material.
 
   **Instructions:**
   1.  Generate exactly {{{questionCount}}} questions.
@@ -29,8 +27,9 @@ export async function generateAIAssessment(input: GenerateAIAssessmentInput): Pr
   {{{content}}}
   ---
   `,
-  });
+});
 
+export async function generateAIAssessment(input: GenerateAIAssessmentInput): Promise<AIAssessment> {
   const { output } = await assessmentPrompt(input);
   if (!output) {
     throw new Error('Failed to generate AI assessment.');
