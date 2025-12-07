@@ -32,6 +32,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { Switch } from "@/components/ui/switch";
 
 
 function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
@@ -556,7 +557,7 @@ function TestHistory({ tests, onReview }: { tests: any[], onReview: (test: any, 
 }
 
 
-export default function MaterialPage({ params }: { params: { id: string } }) {
+export default function MaterialPage({ params: { id } }: { params: { id: string } }) {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
@@ -577,8 +578,8 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
 
     const materialRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
-        return doc(firestore, 'users', user.uid, 'studyMaterials', params.id);
-    }, [firestore, user, params.id]);
+        return doc(firestore, 'users', user.uid, 'studyMaterials', id);
+    }, [firestore, user, id]);
 
     const { data: material, isLoading: isMaterialLoading } = useDoc(materialRef);
 
@@ -594,16 +595,16 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         }
 
         const fetchPastTests = async () => {
-            if (!user || !firestore || !params.id) return;
+            if (!user || !firestore || !id) return;
             setIsLoadingPastTests(true);
             try {
                 const testsQuery = query(
                     collection(firestore, `users/${user.uid}/tests`),
-                    where("studyMaterialId", "==", params.id)
+                    where("studyMaterialId", "==", id)
                 );
                 const testResultsQuery = query(
                     collection(firestore, `users/${user.uid}/testResults`),
-                    where("studyMaterialId", "==", params.id)
+                    where("studyMaterialId", "==", id)
                 );
                 
                 const [testsSnapshot, testResultsSnapshot] = await Promise.all([
@@ -629,7 +630,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         };
 
         fetchPastTests();
-    }, [material, user, firestore, params.id]);
+    }, [material, user, firestore, id]);
 
     const handleGenerateStudyGuide = (useOnlineSources: boolean) => {
         if (!material?.extractedText || !user || !materialRef) return;
