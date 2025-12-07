@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LoaderCircle, TestTube, CheckCircle, XCircle, TimerIcon, Sparkles, MessageCircle, History } from "lucide-react";
+import { BookOpen, LoaderCircle, TestTube, CheckCircle, XCircle, TimerIcon, Sparkles, MessageCircle, History, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateStudyGuide, generateAssessment, evaluateAssessment } from "@/lib/actions";
 import { 
@@ -35,17 +35,80 @@ import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 
 
-function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
+function StudyGuideDisplay({ studyGuide, materialTitle }: { studyGuide: GenerateStudyGuideOutput, materialTitle: string }) {
     
     const cleanMnemonic = (text: string) => {
         // Remove markdown bold/italic asterisks and leading list markers
         return text.replace(/\*/g, '').replace(/^\s*-\s*/, '').trim();
     };
 
+    const handleDownload = () => {
+        let content = `Study Guide for: ${materialTitle}\n\n`;
+
+        content += "## Executive Summary\n";
+        content += `${studyGuide.summary}\n\n`;
+
+        content += "## Key Points\n";
+        studyGuide.keyPoints.forEach(point => {
+            content += `- ${point}\n`;
+        });
+        content += "\n";
+
+        if (studyGuide.definitions.length > 0) {
+            content += "## Definitions\n";
+            studyGuide.definitions.forEach(item => {
+                content += `**${item.term}**: ${item.definition}\n`;
+            });
+            content += "\n";
+        }
+
+        if (studyGuide.concepts.length > 0) {
+            content += "## Explained Concepts\n";
+            studyGuide.concepts.forEach(item => {
+                content += `### ${item.concept}\n`;
+                content += `${item.explanation}\n\n`;
+            });
+        }
+        
+        if (studyGuide.examples.length > 0) {
+            content += "## Examples\n";
+            studyGuide.examples.forEach(item => {
+                content += `### ${item.concept}\n`;
+                content += `*Example:* ${item.example}\n\n`;
+            });
+        }
+
+        if (studyGuide.mnemonics.length > 0) {
+            content += "## Memorization Cues\n";
+            studyGuide.mnemonics.forEach(cue => {
+                content += `- ${cleanMnemonic(cue)}\n`;
+            });
+            content += "\n";
+        }
+
+        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        const safeTitle = materialTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        link.download = `study_guide_${safeTitle}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>AI Generated Study Guide</CardTitle>
+            <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                    <CardTitle>AI Generated Study Guide</CardTitle>
+                    <CardDescription>Review the key information from your source.</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleDownload}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                </Button>
             </CardHeader>
             <CardContent>
                 <Accordion type="multiple" defaultValue={['summary', 'key-points']} className="w-full">
@@ -809,7 +872,7 @@ export default function MaterialPage({ params: { id } }: { params: { id: string 
                     <div className="mt-8 grid flex-col gap-8 lg:grid-cols-2">
                         <div className="space-y-8">
                              {studyGuide ? (
-                                <StudyGuideDisplay studyGuide={studyGuide} />
+                                <StudyGuideDisplay studyGuide={studyGuide} materialTitle={material.title} />
                             ) : (
                                 <OriginalContentDisplay content={material.extractedText} />
                             )}
@@ -846,3 +909,5 @@ export default function MaterialPage({ params: { id } }: { params: { id: string 
         </DashboardLayout>
     );
 }
+
+    
