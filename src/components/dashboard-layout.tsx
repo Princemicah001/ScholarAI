@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Logo } from './logo';
 import { UserNav } from './user-nav';
-import { LayoutDashboard, BookPlus, History, Settings, User as UserIcon, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookPlus, History, Settings, User as UserIcon, LogOut, Flame } from 'lucide-react';
 import Link from 'next/link';
 import Loading from '@/app/loading';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -35,6 +35,7 @@ import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { signOut } from 'firebase/auth';
 import { useAuth } from '@/firebase';
+import { AskCognifyFAB } from './ask-cognify-fab';
 
 
 const navItems = [
@@ -93,11 +94,11 @@ function BottomNav() {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <UserIcon className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
@@ -110,6 +111,40 @@ function BottomNav() {
               </DropdownMenuContent>
             </DropdownMenu>
         </div>
+    </div>
+  )
+}
+
+const DailyStreak = () => {
+  const [streak, setStreak] = useState(0);
+
+  useEffect(() => {
+    // This is a placeholder for more robust streak logic.
+    // In a real app, this would involve checking last login date from Firestore.
+    const storedStreak = localStorage.getItem('cognify_streak');
+    const storedDate = localStorage.getItem('cognify_last_login');
+    const today = new Date().toDateString();
+
+    if (storedDate === today) {
+      setStreak(Number(storedStreak) || 1);
+    } else {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (storedDate === yesterday) {
+        const newStreak = (Number(storedStreak) || 0) + 1;
+        setStreak(newStreak);
+        localStorage.setItem('cognify_streak', String(newStreak));
+      } else {
+        setStreak(1);
+        localStorage.setItem('cognify_streak', '1');
+      }
+      localStorage.setItem('cognify_last_login', today);
+    }
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1 text-orange-500">
+      <Flame className="h-5 w-5" />
+      <span className="font-bold text-sm">{streak}</span>
     </div>
   )
 }
@@ -136,68 +171,73 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     return <Loading />;
   }
 
-  if (isMobile) {
-    return (
-      <>
-        <main className="flex-1 pb-20">
-           <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-40">
-            <Link href="/dashboard">
-              <Logo />
-            </Link>
-          </header>
-          <div className="p-4 sm:p-6">{children}</div>
-        </main>
-        <BottomNav />
-      </>
-    );
-  }
-
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <Sidebar>
-          <SidebarHeader>
-            <Logo />
-          </SidebarHeader>
-          <SidebarContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <Link href={item.href} legacyBehavior passHref>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={pathname === item.href}
-                      tooltip={item.label}
-                    >
-                      <a>
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </Link>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
-          <SidebarFooter>
-            <UserNav />
-          </SidebarFooter>
-        </Sidebar>
-        <main className="flex-1">
-          <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6">
-            <SidebarTrigger className="md:hidden" />
-            <div className="w-full flex-1">
-              {/* Future search bar could go here */}
-            </div>
-            <div className="hidden md:block">
-              <UserNav />
-            </div>
-          </header>
-          <div className="p-4 sm:p-6">{children}</div>
-        </main>
-      </div>
-    </SidebarProvider>
+    <div className="relative">
+      {isMobile ? (
+        <>
+          <main className="flex-1 pb-20">
+             <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6 sticky top-0 z-40">
+              <Link href="/dashboard">
+                <Logo />
+              </Link>
+              <div className="ml-auto">
+                <DailyStreak />
+              </div>
+            </header>
+            <div className="p-4 sm:p-6">{children}</div>
+          </main>
+          <BottomNav />
+        </>
+      ) : (
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full">
+            <Sidebar>
+              <SidebarHeader>
+                <Logo />
+              </SidebarHeader>
+              <SidebarContent>
+                <SidebarMenu>
+                  {navItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <Link href={item.href} legacyBehavior passHref>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={pathname === item.href}
+                          tooltip={item.label}
+                        >
+                          <a>
+                            <item.icon />
+                            <span>{item.label}</span>
+                          </a>
+                        </SidebarMenuButton>
+                      </Link>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarContent>
+              <SidebarFooter>
+                <UserNav />
+              </SidebarFooter>
+            </Sidebar>
+            <main className="flex-1">
+              <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:h-[60px] lg:px-6">
+                <SidebarTrigger className="md:hidden" />
+                <div className="w-full flex-1">
+                  {/* Future search bar could go here */}
+                </div>
+                <div className="flex items-center gap-4">
+                  <DailyStreak />
+                  <div className="hidden md:block">
+                    <UserNav />
+                  </div>
+                </div>
+              </header>
+              <div className="p-4 sm:p-6">{children}</div>
+            </main>
+          </div>
+        </SidebarProvider>
+      )}
+      <AskCognifyFAB />
+    </div>
   );
 }
-
-    

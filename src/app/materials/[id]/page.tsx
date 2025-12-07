@@ -2,15 +2,15 @@
 'use client';
 
 import React, { useTransition, useState, useEffect } from "react";
-import { useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useDoc, useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { doc, collection } from "firebase/firestore";
+import { doc, collection, query, where, getDocs } from "firebase/firestore";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { BookOpen, LoaderCircle, TestTube, CheckCircle, XCircle, TimerIcon, Sparkles, MessageCircle } from "lucide-react";
+import { BookOpen, LoaderCircle, TestTube, CheckCircle, XCircle, TimerIcon, Sparkles, MessageCircle, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { generateStudyGuide, generateAssessment, evaluateAssessment } from "@/lib/actions";
 import { 
@@ -20,7 +20,6 @@ import {
     Question, 
     UserAnswer,
     AssessmentEvaluationOutput,
-    EvaluationResult,
     StudyGuide,
 } from "@/lib/schemas";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -32,15 +31,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useRouter } from "next/navigation";
-import { Switch } from "@/components/ui/switch";
+import { format } from "date-fns";
 
 
 function StudyGuideDisplay({ studyGuide }: { studyGuide: GenerateStudyGuideOutput }) {
     
     const cleanMnemonic = (text: string) => {
-        // This will remove leading list-style asterisks and surrounding bold/italic asterisks
-        return text.replace(/^\s*\*\s*/, '').replace(/\*\*/g, '');
+        // Remove markdown bold/italic asterisks and leading list markers
+        return text.replace(/\*/g, '').replace(/^\s*-\s*/, '').trim();
     };
 
     return (
@@ -412,7 +410,7 @@ function ResultsDisplay({ assessment, evaluation, userAnswers, onRetake, onFinis
                                     <AccordionTrigger>
                                         <div className="flex items-center gap-2">
                                             {isCorrect ? <CheckCircle className="h-5 w-5 text-green-500"/> : <XCircle className="h-5 w-5 text-red-500" />}
-                                            <span>Question {index + 1}: {question.questionType.replace('_', ' ')}</span>
+                                            <span>Question {index + 1}: {question.questionType.replace(/_/g, ' ')}</span>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="prose dark:prose-invert max-w-none space-y-4">
@@ -527,27 +525,32 @@ function StudyGuideConfigDialog({ onStart, isLoading }: { onStart: (useOnline: b
     );
 }
 
-function AskCognify() {
+function TestHistory({ tests, onReview }: { tests: any[], onReview: (test: any, result: any) => void }) {
     return (
-        <Card className="bg-gradient-to-r from-primary to-accent text-primary-foreground">
+        <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <MessageCircle />
-                    Ask Cognify (Premium)
-                </CardTitle>
-                <CardDescription className="text-primary-foreground/80">
-                    Have a question? Chat with Cognify to get instant clarification on your study material.
-                </CardDescription>
+                <CardTitle>Test History</CardTitle>
+                <CardDescription>Review your past assessments for this source.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Textarea placeholder="Ask a question about your content..." className="text-foreground" />
+                {tests.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No tests taken for this source yet.</p>
+                ) : (
+                    <div className="space-y-4">
+                        {tests.map(test => (
+                            <div key={test.id} className="flex items-center justify-between rounded-md border p-3">
+                                <div>
+                                    <p className="font-medium">Score: {test.result.score}%</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Taken on {format(new Date(test.result.completionDate), 'PP')}
+                                    </p>
+                                </div>
+                                <Button variant="ghost" size="sm" onClick={() => onReview(test.test, test.result)}>Review</Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </CardContent>
-            <CardFooter>
-                <Button variant="secondary" className="w-full">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Start Chat
-                </Button>
-            </CardFooter>
         </Card>
     );
 }
@@ -569,6 +572,8 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
     const [evaluation, setEvaluation] = useState<AssessmentEvaluationOutput | null>(null);
     
     const [formattedDate, setFormattedDate] = useState('');
+    const [pastTests, setPastTests] = useState<any[]>([]);
+    const [isLoadingPastTests, setIsLoadingPastTests] = useState(true);
 
     const materialRef = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -587,7 +592,44 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         if (material?.studyGuide) {
             setStudyGuide(material.studyGuide);
         }
-    }, [material]);
+
+        const fetchPastTests = async () => {
+            if (!user || !firestore || !params.id) return;
+            setIsLoadingPastTests(true);
+            try {
+                const testsQuery = query(
+                    collection(firestore, `users/${user.uid}/tests`),
+                    where("studyMaterialId", "==", params.id)
+                );
+                const testResultsQuery = query(
+                    collection(firestore, `users/${user.uid}/testResults`),
+                    where("studyMaterialId", "==", params.id)
+                );
+                
+                const [testsSnapshot, testResultsSnapshot] = await Promise.all([
+                    getDocs(testsQuery),
+                    getDocs(testResultsQuery),
+                ]);
+
+                const testsData = testsSnapshot.docs.map(d => ({...d.data(), id: d.id}));
+                const resultsData = testResultsSnapshot.docs.map(d => ({...d.data(), id: d.id}));
+
+                const combined = testsData.map(test => {
+                    const result = resultsData.find(res => res.testId === test.id);
+                    return { test, result };
+                }).filter(item => item.result); // Only include tests that have a result
+                
+                setPastTests(combined);
+
+            } catch (error) {
+                console.error("Failed to fetch past tests:", error);
+            } finally {
+                setIsLoadingPastTests(false);
+            }
+        };
+
+        fetchPastTests();
+    }, [material, user, firestore, params.id]);
 
     const handleGenerateStudyGuide = (useOnlineSources: boolean) => {
         if (!material?.extractedText || !user || !materialRef) return;
@@ -651,7 +693,7 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                 const result = await evaluateAssessment({ assessment, userAnswers: answers });
                 setEvaluation(result);
                 
-                const newTestRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/tests`), {
+                const testDoc = {
                     userId: user.uid,
                     studyMaterialId: material.id,
                     testType: "Mixed",
@@ -661,17 +703,23 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                     creationDate: new Date().toISOString(),
                     assessment, // save the test itself
                     userAnswers: answers, // save the answers
-                });
+                };
+                const newTestRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/tests`), testDoc);
 
-                await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/testResults`), {
+                const resultDoc = {
                     testId: newTestRef.id,
                     userId: user.uid,
                     studyMaterialId: material.id,
                     score: result.overallScore,
                     completionDate: new Date().toISOString(),
                     performanceSummary: `Strengths: ${result.strengthSummary}. Weaknesses: ${result.weaknessAnalysis}`,
-                    recommendations: "Review the feedback provided for incorrect answers."
-                });
+                    recommendations: "Review the feedback provided for incorrect answers.",
+                    evaluation: result, // Save the full evaluation
+                };
+                await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/testResults`), resultDoc);
+
+                // Add the new test to the past tests state
+                setPastTests(prev => [...prev, { test: { ...testDoc, id: newTestRef.id }, result: resultDoc }]);
 
                 setView('results');
                 toast({
@@ -689,6 +737,13 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
             }
         });
     }
+
+    const handleReviewPastTest = (testData: any, resultData: any) => {
+        setAssessment(testData.assessment);
+        setUserAnswers(testData.userAnswers);
+        setEvaluation(resultData.evaluation);
+        setView('results');
+    };
 
     const resetToGuide = () => {
         setAssessment(null);
@@ -769,7 +824,11 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
                                     <AssessmentConfigDialog onStart={handleGenerateAssessment} isLoading={isAssessmentLoading} />
                                 </CardContent>
                             </Card>
-                            <AskCognify />
+                             {isLoadingPastTests ? (
+                                <Skeleton className="h-48 w-full" />
+                            ) : (
+                                <TestHistory tests={pastTests} onReview={handleReviewPastTest} />
+                            )}
                         </div>
                     </div>
                 );
@@ -786,5 +845,3 @@ export default function MaterialPage({ params }: { params: { id: string } }) {
         </DashboardLayout>
     );
 }
-
-    

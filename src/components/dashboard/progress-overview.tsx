@@ -113,13 +113,27 @@ export function ProgressOverview() {
                     <BarChartIcon className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent className="pb-0">
-                    {chartData.length > 0 ? (
+                    {chartData.length > 0 && chartData.some(d => d.score > 0) ? (
                         <ChartContainer config={chartConfig} className="h-[100px] w-full">
-                            <BarChart accessibilityLayer data={chartData}>
+                           <AreaChart accessibilityLayer data={chartData}>
+                                <defs>
+                                    <linearGradient id="fillScore" x1="0" y1="0" x2="0" y2="1">
+                                    <stop
+                                        offset="5%"
+                                        stopColor="var(--color-score)"
+                                        stopOpacity={0.8}
+                                    />
+                                    <stop
+                                        offset="95%"
+                                        stopColor="var(--color-score)"
+                                        stopOpacity={0.1}
+                                    />
+                                    </linearGradient>
+                                </defs>
                                 <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
                                 <ChartTooltipContent />
-                                <Bar dataKey="score" fill="var(--color-score)" radius={4} />
-                            </BarChart>
+                                <Area type="monotone" dataKey="score" stroke="var(--color-score)" strokeWidth={2} fill="url(#fillScore)" />
+                            </AreaChart>
                         </ChartContainer>
                     ) : (
                          <div className="flex flex-col items-center justify-center h-[100px] text-center">

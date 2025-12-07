@@ -133,10 +133,10 @@ export const UserAnswerSchema = z.object({
 });
 
 export const EvaluateAIAssessmentInputSchema = z.object({
-    assessment: AIAssessmentSchema,
-    userAnswers: z.array(UserAnswerSchema),
-    questionsWithAnswers: z.string().optional()
+  assessment: AIAssessmentSchema,
+  userAnswers: z.record(z.string()).or(z.array(UserAnswerSchema)), // Allow both map and array for flexibility
 });
+
 
 export type AssessmentEvaluationOutput = z.infer<typeof AssessmentEvaluationOutputSchema>;
 export type EvaluateAIAssessmentInput = z.infer<typeof EvaluateAIAssessmentInputSchema>;
