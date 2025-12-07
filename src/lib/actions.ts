@@ -8,6 +8,7 @@ import { generateAIAssessment as generateAIAssessmentFlow } from '@/ai/flows/gen
 import { evaluateAIAssessment as evaluateAIAssessmentFlow } from '@/ai/flows/evaluate-ai-assessment';
 import { generateNotesFromOutline } from '@/ai/flows/generate-notes-from-outline';
 import { isContentOutline as isContentOutlineFlow } from '@/ai/flows/is-content-outline';
+import { askCognify as askCognifyFlow, type AskCognifyInput } from '@/ai/flows/ask-cognify-flow';
 import { 
     textAndUrlSchema, 
     fileSchema,
@@ -72,9 +73,7 @@ export async function createMaterialFromFile(formData: FormData): Promise<Action
         return { error: 'No file found in form data.' };
      }
 
-     const values = { file };
-
-    const validatedFields = fileSchema.safeParse(values);
+    const validatedFields = fileSchema.safeParse({ file });
     if (!validatedFields.success) {
         return { error: validatedFields.error.flatten().fieldErrors.file?.[0] || 'Invalid file input.' };
     }
@@ -132,4 +131,14 @@ export async function generateAssessment(input: GenerateAIAssessmentInput): Prom
 export async function evaluateAssessment(input: EvaluateAIAssessmentInput): Promise<AssessmentEvaluationOutput> {
     const evaluation = await evaluateAIAssessmentFlow(input);
     return evaluation;
+}
+
+export async function askCognify(input: AskCognifyInput): Promise<{ response?: string, error?: string }> {
+    try {
+        const result = await askCognifyFlow(input);
+        return { response: result.response };
+    } catch (error: any) {
+        console.error("Error in askCognify action: ", error);
+        return { error: error.message || 'An unexpected error occurred.' };
+    }
 }

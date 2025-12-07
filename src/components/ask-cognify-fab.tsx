@@ -1,26 +1,72 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useTransition, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { MessageCircle, X, Sparkles, Send } from 'lucide-react';
+import { MessageCircle, X, Sparkles, Send, LoaderCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { cn } from '@/lib/utils';
 import { Textarea } from './ui/textarea';
+import { askCognify } from '@/lib/actions';
+import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from './ui/scroll-area';
+
+type Message = {
+    role: 'user' | 'model';
+    content: string;
+};
 
 export function AskCognifyFAB() {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<{ role: 'user' | 'bot', content: string }[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
+    const [isPending, startTransition] = useTransition();
+    const { toast } = useToast();
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setMessages([]);
+            setInput('');
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        // Scroll to the bottom when a new message is added
+        if (scrollAreaRef.current) {
+            scrollAreaRef.current.scrollTo({
+                top: scrollAreaRef.current.scrollHeight,
+                behavior: 'smooth',
+            });
+        }
+    }, [messages]);
+
 
     const handleSendMessage = () => {
-        if (input.trim() === '') return;
-        setMessages(prev => [...prev, { role: 'user', content: input }]);
-        // Placeholder for AI response
-        setTimeout(() => {
-            setMessages(prev => [...prev, { role: 'bot', content: "This is a placeholder response from Cognify. This feature is coming soon!" }]);
-        }, 1000);
+        if (input.trim() === '' || isPending) return;
+
+        const newMessages: Message[] = [...messages, { role: 'user', content: input }];
+        setMessages(newMessages);
+        const userInput = input;
         setInput('');
+
+        startTransition(async () => {
+            const result = await askCognify({
+                query: userInput,
+                history: newMessages.slice(0, -1), // Send history without the current message
+            });
+
+            if (result.error) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: result.error,
+                });
+                setMessages(prev => prev.slice(0, -1)); // Remove user message if AI fails
+            } else if (result.response) {
+                setMessages(prev => [...prev, { role: 'model', content: result.response! }]);
+            }
+        });
     };
 
     return (
@@ -33,8 +79,9 @@ export function AskCognifyFAB() {
                     size="icon"
                     className="rounded-full w-14 h-14 bg-primary hover:bg-primary/90 shadow-lg"
                     onClick={() => setIsOpen(true)}
+                    aria-label="Open AI Chat"
                 >
-                    <MessageCircle className="h-6 w-6" />
+                    <Sparkles className="h-6 w-6" />
                 </Button>
             </div>
 
@@ -53,28 +100,41 @@ export function AskCognifyFAB() {
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setIsOpen(false)}>
                             <X className="h-4 w-4" />
+                            <span className="sr-only">Close Chat</span>
                         </Button>
                     </CardHeader>
-                    <CardContent className="h-80 overflow-y-auto p-4 space-y-4">
-                        {messages.map((msg, index) => (
-                            <div key={index} className={cn(
-                                "flex items-start gap-3",
-                                msg.role === 'user' ? 'justify-end' : 'justify-start'
-                            )}>
-                                <div className={cn(
-                                    "p-3 rounded-lg max-w-xs",
-                                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                                )}>
-                                    <p className="text-sm">{msg.content}</p>
-                                </div>
+                    <CardContent className="h-80 p-0">
+                        <ScrollArea className="h-full" ref={scrollAreaRef}>
+                            <div className="p-4 space-y-4">
+                                {messages.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center h-full text-center pt-16">
+                                        <MessageCircle className="h-10 w-10 text-muted-foreground mb-2" />
+                                        <p className="text-sm text-muted-foreground">Ask anything about your studies!</p>
+                                    </div>
+                                )}
+                                {messages.map((msg, index) => (
+                                    <div key={index} className={cn(
+                                        "flex items-start gap-3",
+                                        msg.role === 'user' ? 'justify-end' : 'justify-start'
+                                    )}>
+                                        <div className={cn(
+                                            "p-3 rounded-lg max-w-[90%] text-sm",
+                                            msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                                        )}>
+                                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {isPending && (
+                                    <div className="flex items-start gap-3 justify-start">
+                                        <div className="p-3 rounded-lg bg-muted flex items-center gap-2">
+                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            <span className="text-sm text-muted-foreground">Cognify is thinking...</span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        ))}
-                         {messages.length === 0 && (
-                            <div className="flex flex-col items-center justify-center h-full text-center">
-                                <MessageCircle className="h-10 w-10 text-muted-foreground mb-2" />
-                                <p className="text-sm text-muted-foreground">Ask anything about your study materials!</p>
-                            </div>
-                        )}
+                        </ScrollArea>
                     </CardContent>
                     <CardFooter className="pt-4 border-t">
                         <div className="relative w-full">
@@ -89,11 +149,14 @@ export function AskCognifyFAB() {
                                         handleSendMessage();
                                     }
                                 }}
+                                disabled={isPending}
                            />
                            <Button 
                                 size="icon" 
                                 className="absolute top-1/2 right-2 -translate-y-1/2 h-8 w-8"
                                 onClick={handleSendMessage}
+                                disabled={isPending || input.trim() === ''}
+                                aria-label="Send Message"
                            >
                                <Send className="h-4 w-4" />
                            </Button>
