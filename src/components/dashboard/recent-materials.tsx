@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { BookPlus, Eye } from 'lucide-react';
 import Link from 'next/link';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import React from 'react';
 import Image from 'next/image';
@@ -47,14 +47,14 @@ const SourceCard = ({ source }: { source: any }) => {
     )
 }
 
-export function RecentSources() {
+export function AllSources() {
   const { user } = useUser();
   const firestore = useFirestore();
   const emptyDashboardImage = PlaceHolderImages.find((img) => img.id === 'dashboard-empty');
 
   const sourcesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'users', user.uid, 'studyMaterials'), orderBy('uploadDate', 'desc'), limit(3));
+    return query(collection(firestore, 'users', user.uid, 'studyMaterials'), orderBy('uploadDate', 'desc'));
   }, [firestore, user]);
 
   const { data: sources, isLoading: isLoadingSources } = useCollection(sourcesQuery);
@@ -63,7 +63,7 @@ export function RecentSources() {
   if (isLoadingSources) {
     return (
         <div>
-            <h3 className="text-xl font-bold tracking-tight mb-4">Recent Sources</h3>
+            <h3 className="text-xl font-bold tracking-tight mb-4">Your Study Sources</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[...Array(3)].map((_, i) => (
                 <Card key={i}>
@@ -105,7 +105,7 @@ export function RecentSources() {
 
   return (
     <div>
-        <h3 className="text-xl font-bold tracking-tight mb-4">Recent Sources</h3>
+        <h3 className="text-xl font-bold tracking-tight mb-4">Your Study Sources</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sources.map((source) => (
             <SourceCard key={source.id} source={source} />

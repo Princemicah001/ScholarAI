@@ -1,7 +1,7 @@
 
 'use client';
 import { DashboardLayout } from '@/components/dashboard-layout';
-import { RecentSources } from '@/components/dashboard/recent-materials';
+import { AllSources } from '@/components/dashboard/recent-materials';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { BookPlus } from 'lucide-react';
@@ -29,7 +29,7 @@ export default function DashboardPage() {
       <div className="mt-8 space-y-8">
         <DailyAffirmation />
         <ProgressOverview />
-        <RecentSources />
+        <AllSources />
       </div>
     </DashboardLayout>
   );
