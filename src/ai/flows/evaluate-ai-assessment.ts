@@ -41,7 +41,7 @@ const evaluationPrompt = ai.definePrompt({
       - Options: {{join this.options ", "}}
       {{/if}}
       - Correct Answer: {{this.correctAnswer}}
-      - User's Answer: {{(lookup ../userAnswers (lookup this "questionIndex"))}}
+      - User's Answer: {{{lookup ../userAnswers questionIndex}}}
       ---
       {{/each}}
       `,
