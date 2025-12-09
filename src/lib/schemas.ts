@@ -134,7 +134,20 @@ export const UserAnswerSchema = z.object({
 
 export const EvaluateAIAssessmentInputSchema = z.object({
   assessment: AIAssessmentSchema,
-  userAnswers: z.record(z.string()).or(z.array(UserAnswerSchema)), // Allow both map and array for flexibility
+  userAnswers: z.array(UserAnswerSchema),
+});
+
+// New schema for the pre-processed prompt input
+export const EvaluationPromptInputSchema = z.object({
+  questionsAndAnswers: z.array(z.object({
+    questionNumber: z.number(),
+    questionIndex: z.number(),
+    questionText: z.string(),
+    questionType: z.enum(['multiple_choice', 'flashcard', 'short_answer', 'essay']),
+    options: z.array(z.string()).optional(),
+    correctAnswer: z.string(),
+    userAnswer: z.string(),
+  }))
 });
 
 

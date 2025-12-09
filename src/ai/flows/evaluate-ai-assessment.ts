@@ -11,11 +11,12 @@ import {
   AssessmentEvaluationOutputSchema,
   type EvaluateAIAssessmentInput,
   type AssessmentEvaluationOutput,
+  EvaluationPromptInputSchema,
 } from '@/lib/schemas';
 
 const evaluationPrompt = ai.definePrompt({
   name: 'evaluationPrompt',
-  input: { schema: EvaluateAIAssessmentInputSchema },
+  input: { schema: EvaluationPromptInputSchema },
   output: { schema: AssessmentEvaluationOutputSchema },
   prompt: `You are an expert university examiner with unlimited knowledge. Your task is to evaluate a user's performance on an assessment based on the provided questions and their submitted answers. You are not limited to the provided study material and should use your full breadth of knowledge to provide accurate and comprehensive evaluations.
 
@@ -34,14 +35,14 @@ const evaluationPrompt = ai.definePrompt({
 
       **Assessment Questions & User Answers:**
       ---
-      {{#each assessment.questions}}
-      **Question {{add @index 1}} ({{this.questionType}}):**
+      {{#each questionsAndAnswers}}
+      **Question {{this.questionNumber}} ({{this.questionType}}):**
       - Question: {{this.questionText}}
       {{#if this.options}}
       - Options: {{join this.options ", "}}
       {{/if}}
       - Correct Answer: {{this.correctAnswer}}
-      - User's Answer: {{{lookup ../userAnswers questionIndex}}}
+      - User's Answer: {{{this.userAnswer}}}
       ---
       {{/each}}
       `,
@@ -53,24 +54,25 @@ export async function evaluateAIAssessment(
 ): Promise<AssessmentEvaluationOutput> {
   const { assessment, userAnswers } = input;
 
-  // Create a map of questionIndex to answer for easy lookup in the prompt
+  // Create a map of questionIndex to answer for easy lookup
   const answerMap = userAnswers.reduce((acc, ans) => {
     acc[ans.questionIndex] = ans.answer || "Not Answered";
     return acc;
   }, {} as Record<number, string>);
 
-  // Assign questionIndex to each question for the prompt to reference
-  const questionsWithIndex = assessment.questions.map((q, index) => ({
-    ...q,
+  // Pre-process the data into a clean structure for the prompt
+  const questionsAndAnswers = assessment.questions.map((q, index) => ({
+    questionNumber: index + 1,
     questionIndex: index,
+    questionText: q.questionText,
+    questionType: q.questionType,
+    options: q.options,
+    correctAnswer: q.correctAnswer,
+    userAnswer: answerMap[index] || "Not Answered",
   }));
   
   const promptInput = {
-    assessment: {
-      ...assessment,
-      questions: questionsWithIndex,
-    },
-    userAnswers: answerMap,
+    questionsAndAnswers: questionsAndAnswers,
   };
 
   const { output } = await evaluationPrompt(promptInput);
