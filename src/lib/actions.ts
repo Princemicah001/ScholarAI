@@ -88,6 +88,7 @@ export async function createMaterialFromFile(formData: FormData): Promise<Action
 
         const { content: rawText } = await extractContentFromFileFlow({ fileDataUri: dataURI });
 
+        // Check if the content is an outline. If so, expand it.
         const { isOutline } = await isContentOutlineFlow({ content: rawText });
 
         let finalText = rawText;
@@ -101,7 +102,9 @@ export async function createMaterialFromFile(formData: FormData): Promise<Action
             extractedText: finalText,
         };
     } catch (e: any) {
-        return { error: `Failed to process file: ${e.message}`};
+        // The error is now constructed to be more specific, including the model's response if available.
+        const errorMessage = e.message || 'An unknown error occurred during file processing.';
+        return { error: `Failed to process file "${title}": ${errorMessage}`};
     }
 }
 
@@ -143,3 +146,5 @@ export async function askCognify(input: AskCognifyInput): Promise<{ response?: s
         return { error: error.message || 'An unexpected error occurred.' };
     }
 }
+
+    
