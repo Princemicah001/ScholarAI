@@ -11,8 +11,7 @@ import { createMaterialFromTextOrUrl, createMaterialFromFile } from '@/lib/actio
 import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle, FileUp, Text, FileText as FileTextIcon, X } from 'lucide-react';
 import { useUser, useFirestore } from '@/firebase';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection } from 'firebase/firestore';
+import { addDoc, collection } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -57,7 +56,7 @@ export function CreateMaterialForm() {
         if (activeTab === 'text') {
             const result = await createMaterialFromTextOrUrl(values.title, values.content);
             if(result.error) throw new Error(result.error);
-            const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+            const docRef = await addDoc(collection(firestore, `users/${user.uid}/studyMaterials`), {
                 userId: user.uid,
                 title: result.title,
                 sourceType: 'text/url',
@@ -87,7 +86,7 @@ export function CreateMaterialForm() {
                     if(result.error) {
                         throw new Error(result.error);
                     };
-                    const docRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/studyMaterials`), {
+                    const docRef = await addDoc(collection(firestore, `users/${user.uid}/studyMaterials`), {
                         userId: user.uid,
                         title: result.title,
                         extractedText: result.extractedText,
