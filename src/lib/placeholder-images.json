@@ -3,32 +3,32 @@
     {
       "id": "hero",
       "description": "Abstract image of data and learning",
-      "imageUrl": "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMHRlY2hub2xvZ3l8ZW58MHx8fHwxNzY0ODQ2OTUzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "abstract technology"
+      "imageUrl": "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=2940&auto=format&fit=crop",
+      "imageHint": "people technology"
     },
     {
       "id": "feature-extraction",
-      "description": "Icon-like representation of extracting content",
-      "imageUrl": "https://images.unsplash.com/photo-1697382608813-df6eb720164f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxkb2N1bWVudCUyMHBhcGVyfGVufDB8fHx8MTc2NDg0NDc3OXww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "document paper"
+      "description": "A person highlighting text from a digital document",
+      "imageUrl": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2940&auto=format&fit=crop",
+      "imageHint": "digital document"
     },
     {
       "id": "feature-guide",
-      "description": "Icon-like representation of a study guide",
-      "imageUrl": "https://images.unsplash.com/photo-1476275466078-4007374efbbe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxib29rJTIwb3BlbnxlbnwwfHx8fDE3NjQ4ODIzMDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "book open"
+      "description": "A person writing in a notebook next to a laptop",
+      "imageUrl": "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=2874&auto=format&fit=crop",
+      "imageHint": "writing notebook"
     },
     {
       "id": "feature-assessment",
-      "description": "Icon-like representation of a test or assessment",
-      "imageUrl": "https://images.unsplash.com/photo-1657004632819-708722496e61?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxjaGVja2xpc3QlMjB0ZXN0fGVufDB8fHx8MTc2NDg1MjYxMHww&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "checklist test"
+      "description": "A person reviewing a checklist on a clipboard",
+      "imageUrl": "https://images.unsplash.com/photo-1576267423445-b2e0074d68a4?q=80&w=2940&auto=format&fit=crop",
+      "imageHint": "checklist clipboard"
     },
     {
       "id": "dashboard-empty",
-      "description": "An illustration for an empty dashboard state",
-      "imageUrl": "https://images.unsplash.com/photo-1618866569162-6be428961651?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkZXNrJTIwYm9va3N8ZW58MHx8fHwxNzY0ODgyMzA0fDA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "desk books"
+      "description": "An organized and clean workspace with a laptop",
+      "imageUrl": "https://images.unsplash.com/photo-1516321497487-e288fb19713f?q=80&w=2940&auto=format&fit=crop",
+      "imageHint": "workspace laptop"
     }
   ]
 }
