@@ -49,10 +49,10 @@ export function CreateMaterialForm() {
     }
 
     startTransition(async () => {
+      let materialId: string | undefined;
+      let shouldRefreshAndGoToDashboard = false;
+        
       try {
-        let materialId: string | undefined;
-        let shouldRefreshAndGoToDashboard = false;
-
         if (activeTab === 'text') {
             const result = await createMaterialFromTextOrUrl(values.title, values.content);
             if(result.error) throw new Error(result.error);
@@ -99,7 +99,8 @@ export function CreateMaterialForm() {
                       title: `Processing Failed for ${file.name}`,
                       description: e.message,
                     });
-                    break;
+                    // Stop processing further files if one fails
+                    break; 
                 }
             }
             
@@ -107,6 +108,10 @@ export function CreateMaterialForm() {
                 materialId = successfulIds[0];
             } else if (successfulIds.length > 1) {
                 shouldRefreshAndGoToDashboard = true;
+            } else if (successfulIds.length === 0 && files.length > 0) {
+                // This case handles when all files failed to upload.
+                // We don't want to show a success toast.
+                return;
             }
         }
         
@@ -115,21 +120,20 @@ export function CreateMaterialForm() {
             description: "Your study source(s) have been saved successfully.",
         });
 
+        router.refresh();
         if (shouldRefreshAndGoToDashboard) {
-            router.refresh();
             router.push('/dashboard');
         } else if (materialId) {
-            router.refresh();
             router.push(`/materials/${materialId}`);
         } else {
-             router.refresh();
              router.push('/dashboard');
         }
+
       } catch (error: any) {
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: error.message || `Failed to create source from ${activeTab}.`,
+          title: 'Error Creating Source',
+          description: error.message || `An unexpected error occurred. Please try again.`,
         });
       }
     });
