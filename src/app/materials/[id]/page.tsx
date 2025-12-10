@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 import { useParams } from "next/navigation";
+import { AIGenerationProgress } from "@/components/materials/ai-generation-progress";
 
 
 function StudyGuideDisplay({ studyGuide, materialTitle }: { studyGuide: GenerateStudyGuideOutput, materialTitle: string }) {
@@ -620,6 +621,11 @@ function TestHistory({ tests, onReview }: { tests: any[], onReview: (test: any, 
     );
 }
 
+type ViewState = 
+    | { name: 'guide' }
+    | { name: 'assessment', data: AIAssessment }
+    | { name: 'results', data: { assessment: AIAssessment, evaluation: AssessmentEvaluationOutput, userAnswers: UserAnswer[] }}
+    | { name: 'loading', task: string, duration: number };
 
 export default function MaterialPage() {
     const params = useParams();
@@ -631,12 +637,10 @@ export default function MaterialPage() {
     const [isAssessmentLoading, startAssessmentTransition] = useTransition();
     const [isEvaluating, startEvaluationTransition] = useTransition();
 
-    const [view, setView] = useState<'guide' | 'assessment' | 'results' | 'loading'>('guide');
+    const [view, setView] = useState<ViewState>({ name: 'guide' });
 
+    // This state is for holding the data that needs to persist across views
     const [studyGuide, setStudyGuide] = useState<StudyGuide | null>(null);
-    const [assessment, setAssessment] = useState<AIAssessment | null>(null);
-    const [userAnswers, setUserAnswers] = useState<UserAnswer[] | null>(null);
-    const [evaluation, setEvaluation] = useState<AssessmentEvaluationOutput | null>(null);
     
     const [formattedDate, setFormattedDate] = useState('');
     const [pastTests, setPastTests] = useState<any[]>([]);
@@ -684,7 +688,7 @@ export default function MaterialPage() {
                 const combined = testsData.map(test => {
                     const result = resultsData.find(res => res.testId === test.id);
                     return { test, result };
-                }).filter(item => item.result); // Only include tests that have a result
+                }).filter(item => item.result).sort((a,b) => new Date(b.result.completionDate).getTime() - new Date(a.result.completionDate).getTime());
                 
                 setPastTests(combined);
 
@@ -702,6 +706,7 @@ export default function MaterialPage() {
         if (!material?.extractedText || !user || !materialRef) return;
 
         startGuideTransition(async () => {
+            setView({ name: 'loading', task: 'Generating Study Guide', duration: 45 });
             try {
                 const guide = await generateStudyGuide(material.extractedText, useOnlineSources);
                 const guideWithId: StudyGuide = { ...guide, id: new Date().toISOString() };
@@ -719,6 +724,8 @@ export default function MaterialPage() {
                     title: "Generation Failed",
                     description: error.message || "Could not generate the study guide.",
                 });
+            } finally {
+                setView({ name: 'guide' });
             }
         });
     }
@@ -727,15 +734,14 @@ export default function MaterialPage() {
         if (!material?.extractedText) return;
 
         startAssessmentTransition(async () => {
+            setView({ name: 'loading', task: 'Generating Assessment', duration: 30 });
             try {
-                setView('loading');
                 const assessmentInput: GenerateAIAssessmentInput = {
                     ...config,
                     content: material.extractedText,
                 };
                 const generatedAssessment = await generateAssessment(assessmentInput);
-                setAssessment(generatedAssessment);
-                setView('assessment');
+                setView({ name: 'assessment', data: generatedAssessment });
                 toast({
                     title: "Assessment Generated",
                     description: "Your AI-powered assessment is ready.",
@@ -746,29 +752,28 @@ export default function MaterialPage() {
                     title: "Generation Failed",
                     description: error.message || "Could not generate the assessment.",
                 });
-                 setView('guide');
+                 setView({ name: 'guide' });
             }
         });
     };
 
-    const handleAssessmentComplete = (answers: UserAnswer[]) => {
-        if (!assessment || !user || !firestore || !material) return;
-        setUserAnswers(answers);
+    const handleAssessmentComplete = (answers: UserAnswer[], assessmentData: AIAssessment) => {
+        if (!user || !firestore || !material) return;
+        
         startEvaluationTransition(async () => {
+            setView({ name: 'loading', task: 'Evaluating Your Answers', duration: 25 });
             try {
-                setView('loading');
-                const result = await evaluateAssessment({ assessment, userAnswers: answers });
-                setEvaluation(result);
+                const result = await evaluateAssessment({ assessment: assessmentData, userAnswers: answers });
                 
                 const testDoc = {
                     userId: user.uid,
                     studyMaterialId: material.id,
                     testType: "Mixed",
-                    questionCount: assessment.questions.length,
-                    timer: assessment.timer || 0,
+                    questionCount: assessmentData.questions.length,
+                    timer: assessmentData.timer || 0,
                     passingScore: 70, 
                     creationDate: new Date().toISOString(),
-                    assessment, // save the test itself
+                    assessment: assessmentData, // save the test itself
                     userAnswers: answers, // save the answers
                 };
                 const newTestRef = await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/tests`), testDoc);
@@ -786,9 +791,10 @@ export default function MaterialPage() {
                 await addDocumentNonBlocking(collection(firestore, `users/${user.uid}/testResults`), resultDoc);
 
                 // Add the new test to the past tests state
-                setPastTests(prev => [...prev, { test: { ...testDoc, id: newTestRef.id }, result: resultDoc }]);
+                setPastTests(prev => [{ test: { ...testDoc, id: newTestRef.id }, result: resultDoc }, ...prev]);
+                
+                setView({ name: 'results', data: { assessment: assessmentData, evaluation: result, userAnswers: answers } });
 
-                setView('results');
                 toast({
                     title: "Assessment Evaluated",
                     description: "Check out your results below.",
@@ -800,23 +806,24 @@ export default function MaterialPage() {
                     title: "Evaluation Failed",
                     description: error.message || "Could not evaluate your assessment.",
                 });
-                setView('assessment');
+                setView({ name: 'assessment', data: assessmentData });
             }
         });
     }
 
     const handleReviewPastTest = (testData: any, resultData: any) => {
-        setAssessment(testData.assessment);
-        setUserAnswers(testData.userAnswers);
-        setEvaluation(resultData.evaluation);
-        setView('results');
+        setView({ 
+            name: 'results', 
+            data: { 
+                assessment: testData.assessment, 
+                evaluation: resultData.evaluation,
+                userAnswers: testData.userAnswers
+            } 
+        });
     };
 
     const resetToGuide = () => {
-        setAssessment(null);
-        setEvaluation(null);
-        setUserAnswers(null);
-        setView('guide');
+        setView({ name: 'guide' });
     }
 
     if (isMaterialLoading) {
@@ -855,19 +862,17 @@ export default function MaterialPage() {
     }
 
     const renderContent = () => {
-        switch (view) {
+        switch (view.name) {
             case 'assessment':
-                if (assessment) return <AssessmentDisplay assessment={assessment} onComplete={handleAssessmentComplete} />;
-                return null;
+                return <AssessmentDisplay assessment={view.data} onComplete={(answers) => handleAssessmentComplete(answers, view.data)} />;
             case 'results':
-                if (assessment && evaluation && userAnswers) return <ResultsDisplay assessment={assessment} evaluation={evaluation} userAnswers={userAnswers} onRetake={() => setView('guide')} onFinish={resetToGuide} />;
-                return null;
+                return <ResultsDisplay assessment={view.data.assessment} evaluation={view.data.evaluation} userAnswers={view.data.userAnswers} onRetake={resetToGuide} onFinish={resetToGuide} />;
             case 'loading':
                  return (
-                    <div className="mt-8 flex flex-col items-center justify-center text-center h-96">
-                        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-                        <p className="mt-4 text-muted-foreground">Cognify is working its magic. Please wait a moment.</p>
-                    </div>
+                    <AIGenerationProgress 
+                        estimatedDuration={view.duration} 
+                        taskDescription={view.task} 
+                    />
                 );
             case 'guide':
             default:
