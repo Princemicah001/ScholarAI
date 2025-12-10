@@ -35,6 +35,7 @@ import { format } from "date-fns";
 import { Switch } from "@/components/ui/switch";
 import { useParams } from "next/navigation";
 import { AIGenerationProgress } from "@/components/materials/ai-generation-progress";
+import jsPDF from "jspdf";
 
 
 function StudyGuideDisplay({ studyGuide, materialTitle }: { studyGuide: GenerateStudyGuideOutput, materialTitle: string }) {
@@ -45,59 +46,140 @@ function StudyGuideDisplay({ studyGuide, materialTitle }: { studyGuide: Generate
     };
 
     const handleDownload = () => {
-        let content = `Study Guide for: ${materialTitle}\n\n`;
+        const doc = new jsPDF();
+        const pageHeight = doc.internal.pageSize.height;
+        let y = 20; // Initial y position
+        const margin = 15;
+        const maxLineWidth = doc.internal.pageSize.width - margin * 2;
 
-        content += "## Executive Summary\n";
-        content += `${studyGuide.summary}\n\n`;
+        const checkY = (requiredHeight: number) => {
+            if (y + requiredHeight > pageHeight - margin) {
+                doc.addPage();
+                y = margin;
+            }
+        };
 
-        content += "## Key Points\n";
+        // Title
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        const titleLines = doc.splitTextToSize(`Study Guide: ${materialTitle}`, maxLineWidth);
+        checkY(titleLines.length * 10);
+        doc.text(titleLines, margin, y);
+        y += titleLines.length * 10;
+
+        doc.setFont('helvetica', 'normal');
+
+        // Executive Summary
+        checkY(15);
+        doc.setFontSize(16);
+        doc.text("Executive Summary", margin, y);
+        y += 8;
+        doc.setFontSize(12);
+        const summaryLines = doc.splitTextToSize(studyGuide.summary, maxLineWidth);
+        checkY(summaryLines.length * 7);
+        doc.text(summaryLines, margin, y);
+        y += summaryLines.length * 7 + 10;
+
+
+        // Key Points
+        checkY(15);
+        doc.setFontSize(16);
+        doc.text("Key Points", margin, y);
+        y += 8;
+        doc.setFontSize(12);
         studyGuide.keyPoints.forEach(point => {
-            content += `- ${point}\n`;
+            const pointLines = doc.splitTextToSize(`- ${point}`, maxLineWidth - 5);
+            checkY(pointLines.length * 7);
+            doc.text(pointLines, margin + 5, y);
+            y += pointLines.length * 7;
         });
-        content += "\n";
+        y += 10;
 
+
+        // Definitions
         if (studyGuide.definitions.length > 0) {
-            content += "## Definitions\n";
+            checkY(15);
+            doc.setFontSize(16);
+            doc.text("Definitions", margin, y);
+            y += 8;
+            doc.setFontSize(12);
             studyGuide.definitions.forEach(item => {
-                content += `**${item.term}**: ${item.definition}\n`;
+                doc.setFont('helvetica', 'bold');
+                const termLines = doc.splitTextToSize(item.term, maxLineWidth);
+                checkY(termLines.length * 7 + 7);
+                doc.text(termLines, margin, y);
+                y += termLines.length * 7;
+
+                doc.setFont('helvetica', 'normal');
+                const defLines = doc.splitTextToSize(item.definition, maxLineWidth - 5);
+                doc.text(defLines, margin + 5, y);
+                y += defLines.length * 7 + 5;
             });
-            content += "\n";
+            y += 5;
         }
 
+        // Explained Concepts
         if (studyGuide.concepts.length > 0) {
-            content += "## Explained Concepts\n";
+            checkY(15);
+            doc.setFontSize(16);
+            doc.text("Explained Concepts", margin, y);
+            y += 8;
             studyGuide.concepts.forEach(item => {
-                content += `### ${item.concept}\n`;
-                content += `${item.explanation}\n\n`;
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                const conceptLines = doc.splitTextToSize(item.concept, maxLineWidth);
+                checkY(conceptLines.length * 8 + 7);
+                doc.text(conceptLines, margin, y);
+                y += conceptLines.length * 8;
+
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'normal');
+                const explanationLines = doc.splitTextToSize(item.explanation, maxLineWidth);
+                doc.text(explanationLines, margin, y);
+                y += explanationLines.length * 7 + 10;
             });
         }
         
+        // Examples
         if (studyGuide.examples.length > 0) {
-            content += "## Examples\n";
+            checkY(15);
+            doc.setFontSize(16);
+            doc.text("Examples", margin, y);
+            y+= 8;
             studyGuide.examples.forEach(item => {
-                content += `### ${item.concept}\n`;
-                content += `*Example:* ${item.example}\n\n`;
+                doc.setFontSize(14);
+                doc.setFont('helvetica', 'bold');
+                const conceptLines = doc.splitTextToSize(item.concept, maxLineWidth);
+                checkY(conceptLines.length * 8 + 7);
+                doc.text(conceptLines, margin, y);
+                y += conceptLines.length * 8;
+
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'italic');
+                const exampleLines = doc.splitTextToSize(item.example, maxLineWidth);
+                doc.text(exampleLines, margin, y);
+                y += exampleLines.length * 7 + 10;
+                doc.setFont('helvetica', 'normal');
             });
         }
 
+        // Memorization Cues
         if (studyGuide.mnemonics.length > 0) {
-            content += "## Memorization Cues\n";
+            checkY(15);
+            doc.setFontSize(16);
+            doc.text("Memorization Cues", margin, y);
+            y += 8;
+            doc.setFontSize(12);
             studyGuide.mnemonics.forEach(cue => {
-                content += `- ${cleanMnemonic(cue)}\n`;
+                const cueLines = doc.splitTextToSize(`- ${cleanMnemonic(cue)}`, maxLineWidth - 5);
+                checkY(cueLines.length * 7);
+                doc.text(cueLines, margin + 5, y);
+                y += cueLines.length * 7;
             });
-            content += "\n";
         }
 
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
         const safeTitle = materialTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        link.download = `study_guide_${safeTitle}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        doc.save(`study_guide_${safeTitle}.pdf`);
     };
 
     return (
@@ -109,7 +191,7 @@ function StudyGuideDisplay({ studyGuide, materialTitle }: { studyGuide: Generate
                 </div>
                 <Button variant="outline" size="sm" onClick={handleDownload}>
                     <Download className="mr-2 h-4 w-4" />
-                    Download
+                    Download PDF
                 </Button>
             </CardHeader>
             <CardContent>
