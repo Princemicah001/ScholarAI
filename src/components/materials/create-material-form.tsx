@@ -51,7 +51,7 @@ export function CreateMaterialForm() {
     startTransition(async () => {
       try {
         let materialId: string | undefined;
-        let shouldNavigateToDashboard = false;
+        let shouldRefreshAndGoToDashboard = false;
 
         if (activeTab === 'text') {
             const result = await createMaterialFromTextOrUrl(values.title, values.content);
@@ -72,12 +72,7 @@ export function CreateMaterialForm() {
               throw new Error("No files selected.");
             }
             
-            if (files.length > 1) {
-              shouldNavigateToDashboard = true;
-            }
-
             const successfulIds: string[] = [];
-            // Process files sequentially to avoid rate-limiting
             for (const file of Array.from(files)) {
                 try {
                     const formData = new FormData();
@@ -104,7 +99,6 @@ export function CreateMaterialForm() {
                       title: `Processing Failed for ${file.name}`,
                       description: e.message,
                     });
-                    // Stop processing further files on error
                     break;
                 }
             }
@@ -112,7 +106,7 @@ export function CreateMaterialForm() {
             if (successfulIds.length === 1) {
                 materialId = successfulIds[0];
             } else if (successfulIds.length > 1) {
-                shouldNavigateToDashboard = true;
+                shouldRefreshAndGoToDashboard = true;
             }
         }
         
@@ -121,12 +115,15 @@ export function CreateMaterialForm() {
             description: "Your study source(s) have been saved successfully.",
         });
 
-        if (shouldNavigateToDashboard) {
+        if (shouldRefreshAndGoToDashboard) {
+            router.refresh();
             router.push('/dashboard');
         } else if (materialId) {
+            router.refresh();
             router.push(`/materials/${materialId}`);
-        } else if (activeTab !== 'file') { // If not a file upload and no materialId, something went wrong
-            router.push('/dashboard');
+        } else {
+             router.refresh();
+             router.push('/dashboard');
         }
       } catch (error: any) {
         toast({
